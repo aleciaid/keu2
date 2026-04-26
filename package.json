@@ -1,0 +1,31 @@
+{
+  "name": "keu4",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run optimize-icons && tsc && vite build",
+    "preview": "vite preview",
+    "optimize-icons": "svgo public/icon-192.svg public/icon-512.svg --pretty --indent 2 --multipass"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.4",
+    "@vitejs/plugin-react": "^6.0.1",
+    "svgo": "^4.0.1",
+    "tailwindcss": "^4.2.4",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.9",
+    "vite-plugin-pwa": "^1.2.0"
+  },
+  "dependencies": {
+    "dexie": "^4.4.2",
+    "dexie-react-hooks": "^4.4.0",
+    "lucide-react": "^1.8.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-hot-toast": "^2.6.0",
+    "react-router-dom": "^7.14.2",
+    "uuid": "^14.0.0"
+  }
+}
