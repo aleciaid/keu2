@@ -5,11 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run optimize-icons && tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview",
-    "optimize-icons": "svgo public/icon-192.svg public/icon-512.svg --pretty --indent 2 --multipass"
+    "optimize-icons": "svgo public/icon-192.svg public/icon-512.svg --pretty --indent 2 --multipass",
+    "cap:sync": "npx cap sync",
+    "cap:android": "npx cap open android",
+    "cap:build": "vite build && npx cap sync",
+    "cap:run:android": "npx cap run android",
+    "cap:deploy": "vite build && npx cap sync && npx cap run android"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.0",
     "@tailwindcss/vite": "^4.2.4",
     "@vitejs/plugin-react": "^6.0.1",
     "svgo": "^4.0.1",
@@ -19,6 +25,11 @@
     "vite-plugin-pwa": "^1.2.0"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/core": "^8.4.0",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
     "dexie": "^4.4.2",
     "dexie-react-hooks": "^4.4.0",
     "lucide-react": "^1.8.0",
