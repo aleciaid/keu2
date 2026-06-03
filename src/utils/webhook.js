@@ -8,7 +8,7 @@ export async function sendWebhook(event, data) {
     const webhookUrlSetting = await db.settings.get('webhookUrl');
     const webhookEnabledSetting = await db.settings.get('webhookEnabled');
 
-    if (!webhookEnabledSetting?.value || !webhookUrlSetting?.value) {
+    if (!webhookUrlSetting?.value) {
       return { sent: false, reason: 'disabled' };
     }
 

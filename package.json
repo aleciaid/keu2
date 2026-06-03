@@ -12,7 +12,8 @@
     "cap:android": "npx cap open android",
     "cap:build": "vite build && npx cap sync",
     "cap:run:android": "npx cap run android",
-    "cap:deploy": "vite build && npx cap sync && npx cap run android"
+    "cap:deploy": "vite build && npx cap sync && npx cap run android",
+    "cap:apk": "npm run build && npx cap sync && cd android && gradlew.bat assembleDebug"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.4.0",

@@ -17,6 +17,11 @@ db.version(8).stores({
   transactions: 'id, type, walletId, fromWalletId, toWalletId, categoryId, date, amount, debtStatus, linkedDebtId, createdAt, updatedAt',
 });
 
+// v9: Add recurring budget support
+db.version(9).stores({
+  budgetPlans: 'id, name, walletId, categoryId, status, dueDate, recurrence, nextDueDate, parentPlanId, createdAt, updatedAt',
+});
+
 // Default categories
 export const DEFAULT_CATEGORIES = [
   // Income

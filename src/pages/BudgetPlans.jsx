@@ -18,7 +18,15 @@ import {
   XCircle,
   Clock,
   Ban,
+  Repeat,
+  Zap,
 } from 'lucide-react';
+import {
+  RECURRENCE_OPTIONS,
+  getRecurrenceLabel,
+  processManualPayment,
+  notifyCancelledPlan,
+} from '../utils/budgetScheduler';
 
 export default function BudgetPlans({ openModal, onModalStateChange }) {
   const wallets = useLiveQuery(() => db.wallets.toArray()) || [];
@@ -47,6 +55,8 @@ export default function BudgetPlans({ openModal, onModalStateChange }) {
     categoryId: '',
     dueDate: '',
     note: '',
+    recurrence: 'none',
+    autoPayment: false,
   });
 
   // Maps
@@ -119,6 +129,8 @@ export default function BudgetPlans({ openModal, onModalStateChange }) {
       categoryId: '',
       dueDate: '',
       note: '',
+      recurrence: 'none',
+      autoPayment: false,
     });
     setModalOpen(true);
   };
@@ -133,6 +145,8 @@ export default function BudgetPlans({ openModal, onModalStateChange }) {
       categoryId: plan.categoryId || '',
       dueDate: (plan.dueDate || '').slice(0, 10),
       note: plan.note || '',
+      recurrence: plan.recurrence || 'none',
+      autoPayment: plan.autoPayment || false,
     });
     setModalOpen(true);
   };
@@ -174,6 +188,8 @@ export default function BudgetPlans({ openModal, onModalStateChange }) {
         categoryId: form.categoryId,
         dueDate: form.dueDate || null,
         note: form.note,
+        recurrence: form.recurrence,
+        autoPayment: form.autoPayment,
         updatedAt: now,
       });
 
@@ -196,6 +212,8 @@ export default function BudgetPlans({ openModal, onModalStateChange }) {
         status: 'planned',
         dueDate: form.dueDate || null,
         note: form.note,
+        recurrence: form.recurrence,
+        autoPayment: form.autoPayment,
         createdAt: now,
         updatedAt: now,
       });
@@ -254,12 +272,8 @@ export default function BudgetPlans({ openModal, onModalStateChange }) {
       createdAt: now,
     });
 
-    sendWebhook('budget_plan_paid', {
-      planId: plan.id,
-      name: plan.name,
-      amount: plan.amount,
-      wallet: walletMap[plan.walletId]?.name || '',
-    });
+    // Handle webhook and generate next recurring plan if any
+    await processManualPayment(plan, walletMap);
 
     toast.success('Pembayaran berhasil dicatat');
     setPayPlanId(null);
@@ -280,6 +294,9 @@ export default function BudgetPlans({ openModal, onModalStateChange }) {
       details: { planId: plan.id, amount: plan.amount },
       createdAt: now,
     });
+
+    // Notify webhook about cancellation
+    await notifyCancelledPlan(plan, walletMap);
 
     toast.success('Plan dibatalkan, alokasi dikembalikan');
     setCancelPlanId(null);
@@ -424,7 +441,7 @@ export default function BudgetPlans({ openModal, onModalStateChange }) {
                     <p className="text-base font-bold text-white mb-1">
                       {formatIDR(plan.amount)}
                     </p>
-                    <div className="flex items-center gap-2 text-[11px] text-surface-500 flex-wrap">
+                    <div className="flex items-center gap-2 text-[11px] text-surface-500 flex-wrap mt-0.5">
                       {wallet && (
                         <span className="flex items-center gap-1">
                           {wallet.icon || '💳'} {wallet.name}
@@ -436,6 +453,16 @@ export default function BudgetPlans({ openModal, onModalStateChange }) {
                       {plan.dueDate && (
                         <span className="flex items-center gap-0.5">
                           <Calendar size={10} /> {formatDate(plan.dueDate)}
+                        </span>
+                      )}
+                      {plan.recurrence && plan.recurrence !== 'none' && (
+                        <span className="flex items-center gap-1 text-primary-400 bg-primary-500/10 px-1.5 py-0.5 rounded-md text-[10px] font-medium border border-primary-500/20">
+                          <Repeat size={10} /> {getRecurrenceLabel(plan.recurrence)}
+                        </span>
+                      )}
+                      {plan.autoPayment && (
+                        <span className="flex items-center gap-1 text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-md text-[10px] font-medium border border-amber-500/20">
+                          <Zap size={10} /> Auto
                         </span>
                       )}
                     </div>
@@ -580,6 +607,41 @@ export default function BudgetPlans({ openModal, onModalStateChange }) {
               className="w-full"
             />
           </div>
+
+          {/* Recurrence Selection */}
+          <div className="input-group">
+            <label className="input-label">Ulangi Budget (Periode Berulang)</label>
+            <select
+              value={form.recurrence}
+              onChange={(e) => setForm({ ...form, recurrence: e.target.value })}
+              className="w-full"
+            >
+              {RECURRENCE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.icon} {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Auto Payment Toggle */}
+          {form.dueDate && (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-surface-800/50 border border-surface-700/30">
+              <div>
+                <p className="text-sm font-medium text-white flex items-center gap-1.5">
+                  <Zap size={14} className="text-amber-400" /> Auto-Payment
+                </p>
+                <p className="text-[11px] text-surface-500">Bayar otomatis saat tanggal jatuh tempo</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, autoPayment: !form.autoPayment })}
+                className={`w-12 h-7 rounded-full transition-all relative ${form.autoPayment ? 'bg-primary-500' : 'bg-surface-700'}`}
+              >
+                <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all ${form.autoPayment ? 'left-6' : 'left-1'}`} />
+              </button>
+            </div>
+          )}
 
           {/* Note */}
           <div className="input-group">

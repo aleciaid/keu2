@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { Plus, User, Sparkles } from 'lucide-react';
 import { db, seedDatabase, resetDatabase } from './db/database';
 import { ThemeProvider } from './context/ThemeContext';
+import { runBudgetScheduler } from './utils/budgetScheduler';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
@@ -79,6 +80,25 @@ export default function App() {
     };
     loadProfile();
   }, [dbReady]);
+
+  // Run budget scheduler on startup and every 60 seconds
+  useEffect(() => {
+    if (!dbReady || !profileLoaded) return;
+
+    // Run once immediately on startup
+    runBudgetScheduler().then((results) => {
+      if (results.length > 0) {
+        console.log(`[BudgetScheduler] Auto-paid ${results.length} budget(s)`);
+      }
+    });
+
+    // Check periodically (every 60s)
+    const interval = setInterval(() => {
+      runBudgetScheduler();
+    }, 60_000);
+
+    return () => clearInterval(interval);
+  }, [dbReady, profileLoaded]);
 
   const generateUserId = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
