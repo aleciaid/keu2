@@ -24,6 +24,10 @@ import {
   Info,
   ChevronRight,
   ChevronDown as ChevDown,
+  Shield,
+  Target,
+  Flame,
+  BadgeCheck,
 } from 'lucide-react';
 
 // ─── Savings Analysis Component ──────────────────────────────────────────────
@@ -202,6 +206,227 @@ function SavingsAnalysis({ wallets, walletBalances, totalBalance }) {
               );
             })}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Emergency Fund Section ───────────────────────────────────────────────────
+function EmergencyFundSection({ transactions, totalBalance }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+
+  // ── Hitung total pengeluaran bulan ini ──────────────────────────────────────
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+  const monthlyExpense = transactions
+    .filter(t => (t.type === 'expense' || t.type === 'debt') && t.date >= monthStart && t.date <= monthEnd)
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  // Jika belum ada transaksi bulan ini, gunakan rata-rata dari 3 bulan terakhir
+  let baseExpense = monthlyExpense;
+  if (monthlyExpense === 0) {
+    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1).toISOString();
+    const last3Months = transactions.filter(
+      t => (t.type === 'expense' || t.type === 'debt') && t.date >= threeMonthsAgo && t.date < monthStart
+    );
+    if (last3Months.length > 0) {
+      baseExpense = last3Months.reduce((s, t) => s + t.amount, 0) / 3;
+    }
+  }
+
+  // Target dana darurat = 6 × pengeluaran bulan berjalan
+  const MULTIPLIER = 6;
+  const target = baseExpense * MULTIPLIER;
+
+  // Berapa yang sudah disisihkan (dari total balance)
+  const currentSaved = Math.max(0, totalBalance);
+  const progress = target > 0 ? Math.min(100, (currentSaved / target) * 100) : 0;
+  const shortfall = Math.max(0, target - currentSaved);
+  const isAchieved = shortfall === 0 && target > 0;
+
+  // Status label & warna
+  const getStatus = () => {
+    if (target === 0) return { label: 'Belum ada data', color: 'text-surface-400', bg: 'bg-surface-700/40 border-surface-600/30', icon: Info };
+    if (progress >= 100) return { label: 'Dana Darurat Aman! 🎉', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20', icon: BadgeCheck };
+    if (progress >= 60)  return { label: 'Hampir Tercapai', color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20', icon: TrendingUp };
+    if (progress >= 30)  return { label: 'Perlu Ditingkatkan', color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20', icon: AlertTriangle };
+    return { label: 'Kritis — Segera Tabung!', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20', icon: Flame };
+  };
+
+  const status = getStatus();
+  const StatusIcon = status.icon;
+
+  // Cicilan menabung (berapa harus ditabung tiap bulan agar tercapai dalam 6 bln)
+  const monthlyTarget = shortfall > 0 ? shortfall / 6 : 0;
+  const monthlyTarget3 = shortfall > 0 ? shortfall / 3 : 0;
+
+  // Progress bar gradient color
+  const barColor = progress >= 100
+    ? 'from-emerald-500 to-teal-400'
+    : progress >= 60
+      ? 'from-yellow-500 to-amber-400'
+      : progress >= 30
+        ? 'from-orange-500 to-red-400'
+        : 'from-red-600 to-rose-500';
+
+  // Month name
+  const monthName = now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+  const isEstimated = monthlyExpense === 0 && baseExpense > 0;
+
+  return (
+    <div className="card mb-4 overflow-hidden">
+      {/* Header */}
+      <button
+        className="w-full flex items-center justify-between"
+        onClick={() => setCollapsed(!collapsed)}
+      >
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-red-500/15 flex items-center justify-center">
+            <Shield size={15} className="text-red-400" />
+          </div>
+          <div className="text-left">
+            <span className="text-sm font-semibold text-white">Dana Darurat</span>
+            {!collapsed && target > 0 && (
+              <span className={`ml-2 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                progress >= 100 ? 'bg-emerald-500/15 text-emerald-400' :
+                progress >= 60  ? 'bg-yellow-500/15 text-yellow-400' :
+                                   'bg-red-500/15 text-red-400'
+              }`}>
+                {progress.toFixed(0)}%
+              </span>
+            )}
+          </div>
+        </div>
+        <ChevDown
+          size={16}
+          className={`text-surface-500 transition-transform duration-300 ${collapsed ? '-rotate-90' : ''}`}
+        />
+      </button>
+
+      {!collapsed && (
+        <div className="mt-4 space-y-4 animate-fadeIn">
+
+          {/* Info tooltip toggle */}
+          <button
+            className="flex items-center gap-1.5 text-[11px] text-surface-500 hover:text-surface-300 transition-colors"
+            onClick={() => setShowInfo(!showInfo)}
+          >
+            <Info size={12} />
+            Apa itu dana darurat?
+          </button>
+
+          {showInfo && (
+            <div className="p-3 rounded-xl bg-surface-800/50 border border-surface-700/30 text-[11px] text-surface-400 leading-relaxed animate-fadeIn">
+              Dana darurat adalah tabungan khusus sebesar <strong className="text-white">6× pengeluaran bulanan</strong> yang
+              hanya digunakan saat kondisi darurat (PHK, sakit, kecelakaan). Target ini dihitung dari
+              total pengeluaran bulan {monthName}{isEstimated ? ' (estimasi rata-rata 3 bulan terakhir)' : ''}.
+            </div>
+          )}
+
+          {/* Target & Progress */}
+          {target > 0 ? (
+            <>
+              {/* Numbers row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-xl bg-surface-800/40 border border-surface-700/30">
+                  <p className="text-[10px] text-surface-500 mb-1 uppercase tracking-wide">
+                    Pengeluaran {isEstimated ? '(est.)' : 'Bulan Ini'}
+                  </p>
+                  <p className="text-sm font-bold text-white">{formatCompactIDR(baseExpense)}</p>
+                  <p className="text-[10px] text-surface-600 mt-0.5">× {MULTIPLIER} bulan</p>
+                </div>
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                  <p className="text-[10px] text-red-300/80 mb-1 uppercase tracking-wide">Target Dana Darurat</p>
+                  <p className="text-sm font-bold text-red-300">{formatCompactIDR(target)}</p>
+                  <p className="text-[10px] text-surface-600 mt-0.5">= 6 × pengeluaran</p>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-[11px] text-surface-400">
+                    Tersimpan: <span className="font-semibold text-white">{formatCompactIDR(currentSaved)}</span>
+                  </span>
+                  <span className={`text-[11px] font-bold ${status.color}`}>
+                    {progress.toFixed(1)}%
+                  </span>
+                </div>
+                <div className="h-3 bg-surface-800 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full bg-gradient-to-r ${barColor} transition-all duration-700`}
+                    style={{ width: `${Math.min(100, progress)}%` }}
+                  />
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span className="text-[10px] text-surface-600">Rp 0</span>
+                  <span className="text-[10px] text-surface-600">{formatCompactIDR(target)}</span>
+                </div>
+              </div>
+
+              {/* Status card */}
+              <div className={`flex items-center gap-2.5 p-3 rounded-xl border ${status.bg}`}>
+                <StatusIcon size={16} className={`${status.color} shrink-0`} />
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs font-semibold ${status.color}`}>{status.label}</p>
+                  {!isAchieved && shortfall > 0 && (
+                    <p className="text-[11px] text-surface-500 mt-0.5">
+                      Kekurangan: <span className="font-semibold text-white">{formatCompactIDR(shortfall)}</span>
+                    </p>
+                  )}
+                  {isAchieved && (
+                    <p className="text-[11px] text-surface-500 mt-0.5">
+                      Total balance kamu sudah cukup untuk menutup 6 bulan pengeluaran.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Cicilan menabung (hanya jika belum tercapai) */}
+              {!isAchieved && shortfall > 0 && (
+                <div className="bg-surface-800/40 border border-surface-700/40 rounded-xl p-3">
+                  <div className="flex items-center gap-1.5 mb-2.5">
+                    <Target size={13} className="text-primary-400" />
+                    <p className="text-[11px] font-semibold text-primary-300 uppercase tracking-wide">
+                      Rencana Menabung
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="text-center p-2.5 rounded-lg bg-primary-500/10 border border-primary-500/20">
+                      <p className="text-[9px] text-primary-300 mb-1 font-medium uppercase tracking-wide">
+                        6 Bulan
+                      </p>
+                      <p className="text-xs font-bold text-white">{formatCompactIDR(monthlyTarget)}</p>
+                      <p className="text-[10px] text-surface-500 mt-0.5">/bulan</p>
+                    </div>
+                    <div className="text-center p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                      <p className="text-[9px] text-purple-300 mb-1 font-medium uppercase tracking-wide">
+                        3 Bulan
+                      </p>
+                      <p className="text-xs font-bold text-white">{formatCompactIDR(monthlyTarget3)}</p>
+                      <p className="text-[10px] text-surface-500 mt-0.5">/bulan</p>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-surface-600 mt-2 text-center">
+                    Sisihkan jumlah di atas dari income bulanan untuk mencapai dana darurat
+                  </p>
+                </div>
+              )}
+            </>
+          ) : (
+            /* Empty state — belum ada transaksi sama sekali */
+            <div className="text-center py-4">
+              <Shield size={32} className="mx-auto mb-2 text-surface-700" />
+              <p className="text-xs text-surface-500">Belum ada data pengeluaran</p>
+              <p className="text-[11px] text-surface-600 mt-1">
+                Tambahkan transaksi pengeluaran untuk menghitung target dana darurat
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -500,6 +725,12 @@ export default function Wallets({ openModal, onModalStateChange }) {
           totalBalance={totalBalance}
         />
       )}
+
+      {/* Emergency Fund Section */}
+      <EmergencyFundSection
+        transactions={transactions}
+        totalBalance={totalBalance}
+      />
 
       {/* Reorder hint */}
       {reorderMode && (
