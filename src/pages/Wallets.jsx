@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
-import { formatIDR, formatDate } from '../utils/currency';
+import { formatIDR, formatDate, formatCompactIDR } from '../utils/currency';
 import { sendWebhook } from '../utils/webhook';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -17,8 +17,198 @@ import {
   ChevronDown,
   ArrowUpDown,
   Check,
+  PieChart,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle,
+  Info,
+  ChevronRight,
+  ChevronDown as ChevDown,
 } from 'lucide-react';
 
+// ─── Savings Analysis Component ──────────────────────────────────────────────
+function SavingsAnalysis({ wallets, walletBalances, totalBalance }) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  if (totalBalance <= 0 || wallets.length === 0) return null;
+
+  // Rasio setiap wallet terhadap total balance
+  const walletRatios = wallets.map((w) => {
+    const balance = walletBalances[w.id] || 0;
+    const ratio = totalBalance > 0 ? (balance / totalBalance) * 100 : 0;
+    return { ...w, balance, ratio: Math.max(0, ratio) };
+  });
+
+  // Wallet terbesar (dominan)
+  const dominant = [...walletRatios].sort((a, b) => b.balance - a.balance)[0];
+  const dominantRatio = dominant?.ratio ?? 0;
+
+  // Hitung "konsentrasi" – idealnya tidak ada 1 wallet yang >70% dari total
+  const isConcentrated = dominantRatio > 70;
+  const isWellDistributed = dominantRatio < 50 && wallets.length >= 2;
+
+  // Rekomendasi ideal: gunakan prinsip 50/30/20
+  //  • 50% kebutuhan/operasional (bisa di wallet utama / cash)
+  //  • 30% keinginan (fleksibel)
+  //  • 20% tabungan/investasi
+  const ideal50 = totalBalance * 0.5;
+  const ideal30 = totalBalance * 0.3;
+  const ideal20 = totalBalance * 0.2;
+
+  // Insight berdasarkan kondisi
+  const insights = [];
+  if (isConcentrated) {
+    insights.push({
+      type: 'warning',
+      icon: AlertTriangle,
+      color: 'text-orange-400',
+      bg: 'bg-orange-500/10 border-orange-500/20',
+      title: `Konsentrasi tinggi di "${dominant?.name}"`,
+      desc: `${dominantRatio.toFixed(1)}% dari total balance ada di 1 wallet. Pertimbangkan distribusi ke wallet lain.`,
+    });
+  } else if (isWellDistributed) {
+    insights.push({
+      type: 'success',
+      icon: CheckCircle,
+      color: 'text-emerald-400',
+      bg: 'bg-emerald-500/10 border-emerald-500/20',
+      title: 'Distribusi balance cukup baik',
+      desc: `Balance tersebar merata di ${wallets.length} wallet. Likuiditas terjaga.`,
+    });
+  } else {
+    insights.push({
+      type: 'info',
+      icon: Info,
+      color: 'text-blue-400',
+      bg: 'bg-blue-500/10 border-blue-500/20',
+      title: 'Distribusi normal',
+      desc: 'Tambah lebih banyak wallet untuk diversifikasi penyimpanan dana.',
+    });
+  }
+
+  if (wallets.length === 1) {
+    insights.push({
+      type: 'suggestion',
+      icon: Info,
+      color: 'text-blue-400',
+      bg: 'bg-blue-500/10 border-blue-500/20',
+      title: 'Satu wallet saja',
+      desc: 'Pisahkan dana tabungan dan operasional ke wallet berbeda untuk tracking lebih mudah.',
+    });
+  }
+
+  return (
+    <div className="card mb-4 overflow-hidden">
+      {/* Header */}
+      <button
+        className="w-full flex items-center justify-between mb-0"
+        onClick={() => setCollapsed(!collapsed)}
+      >
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-primary-500/15 flex items-center justify-center">
+            <PieChart size={15} className="text-primary-400" />
+          </div>
+          <span className="text-sm font-semibold text-white">Analisis Tabungan</span>
+        </div>
+        <ChevDown
+          size={16}
+          className={`text-surface-500 transition-transform duration-300 ${collapsed ? '-rotate-90' : ''}`}
+        />
+      </button>
+
+      {!collapsed && (
+        <div className="mt-4 space-y-4 animate-fadeIn">
+          {/* Rasio distribusi per wallet */}
+          <div>
+            <p className="text-[11px] text-surface-500 font-medium uppercase tracking-wide mb-2">
+              Distribusi dari Total Balance
+            </p>
+            <div className="space-y-2.5">
+              {walletRatios.map((w) => (
+                <div key={w.id}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm">{w.icon || '💳'}</span>
+                      <span className="text-xs font-medium text-surface-300 truncate max-w-[120px]">
+                        {w.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] text-surface-400">
+                        {formatCompactIDR(w.balance)}
+                      </span>
+                      <span
+                        className="text-[11px] font-bold tabular-nums"
+                        style={{ color: w.color || '#6366f1' }}
+                      >
+                        {w.ratio.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-2 bg-surface-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${Math.min(100, w.ratio)}%`,
+                        backgroundColor: w.color || '#6366f1',
+                        boxShadow: `0 0 6px ${w.color || '#6366f1'}60`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Rekomendasi Alokasi Ideal 50/30/20 */}
+          <div className="bg-surface-800/40 border border-surface-700/40 rounded-xl p-3">
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <TrendingUp size={13} className="text-primary-400" />
+              <p className="text-[11px] font-semibold text-primary-300 uppercase tracking-wide">
+                Rekomendasi Alokasi (50/30/20)
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="text-center p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <p className="text-[9px] text-blue-300 mb-1 font-medium">KEBUTUHAN</p>
+                <p className="text-[10px] text-surface-400 mb-1">50%</p>
+                <p className="text-xs font-bold text-white">{formatCompactIDR(ideal50)}</p>
+              </div>
+              <div className="text-center p-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                <p className="text-[9px] text-purple-300 mb-1 font-medium">KEINGINAN</p>
+                <p className="text-[10px] text-surface-400 mb-1">30%</p>
+                <p className="text-xs font-bold text-white">{formatCompactIDR(ideal30)}</p>
+              </div>
+              <div className="text-center p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                <p className="text-[9px] text-emerald-300 mb-1 font-medium">TABUNGAN</p>
+                <p className="text-[10px] text-surface-400 mb-1">20%</p>
+                <p className="text-xs font-bold text-emerald-400">{formatCompactIDR(ideal20)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Insights */}
+          <div className="space-y-2">
+            {insights.map((ins, i) => {
+              const Icon = ins.icon;
+              return (
+                <div key={i} className={`flex items-start gap-2.5 p-3 rounded-xl border ${ins.bg}`}>
+                  <Icon size={14} className={`${ins.color} mt-0.5 shrink-0`} />
+                  <div>
+                    <p className="text-xs font-semibold text-white">{ins.title}</p>
+                    <p className="text-[11px] text-surface-500 mt-0.5">{ins.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 const WALLET_ICONS = ['💳', '💰', '🏦', '📱', '💵', '🪙', '💎', '🏧'];
 const WALLET_COLORS = [
   '#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f97316',
@@ -294,13 +484,22 @@ export default function Wallets({ openModal, onModalStateChange }) {
       </div>
 
       {/* Total Balance Card */}
-      <div className="card bg-gradient-to-br from-primary-600/20 to-purple-600/20 border-primary-500/20 mb-6">
+      <div className="card bg-gradient-to-br from-primary-600/20 to-purple-600/20 border-primary-500/20 mb-4">
         <p className="text-xs text-surface-400 mb-1">Total Balance</p>
         <p className={`text-2xl font-bold ${totalBalance < 0 ? 'text-red-400' : 'text-white'}`}>
           {formatIDR(totalBalance)}
         </p>
         <p className="text-xs text-surface-500 mt-1">{wallets.length} wallet aktif</p>
       </div>
+
+      {/* Savings Analysis Section */}
+      {wallets.length > 0 && (
+        <SavingsAnalysis
+          wallets={sortedWallets}
+          walletBalances={walletBalances}
+          totalBalance={totalBalance}
+        />
+      )}
 
       {/* Reorder hint */}
       {reorderMode && (
