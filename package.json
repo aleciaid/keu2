@@ -1,7 +1,7 @@
 {
   "name": "keu4",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,10 @@
     "cap:build": "vite build && npx cap sync",
     "cap:run:android": "npx cap run android",
     "cap:deploy": "vite build && npx cap sync && npx cap run android",
-    "cap:apk": "npm run build && npx cap sync && cd android && gradlew.bat assembleDebug"
+    "cap:apk": "npm run build && npx cap sync && cd android && gradlew.bat assembleDebug",
+    "version:patch": "npm version patch --no-git-tag-version",
+    "version:minor": "npm version minor --no-git-tag-version",
+    "release:apk": "npm run version:patch && npm run build && npx cap sync && cd android && gradlew.bat assembleRelease"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.4.0",

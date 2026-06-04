@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Toaster } from 'react-hot-toast';
-import { Plus, User, Sparkles } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Plus, User, Sparkles, Zap } from 'lucide-react';
 import { db, seedDatabase, resetDatabase } from './db/database';
 import { ThemeProvider } from './context/ThemeContext';
 import { runBudgetScheduler } from './utils/budgetScheduler';
+import { checkAndApplyUpdate, getCurrentVersion } from './utils/appUpdater';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
@@ -22,6 +24,34 @@ export default function App() {
   const [setupName, setSetupName] = useState('');
   const [setupAnimating, setSetupAnimating] = useState(false);
   
+  // ── Check for app update on first mount ──────────────────────────────────
+  useEffect(() => {
+    checkAndApplyUpdate().then(({ updated, from, to }) => {
+      if (updated) {
+        // Tunda sedikit agar Toaster sudah mount
+        setTimeout(() => {
+          toast(
+            (t) => (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <Zap size={16} style={{ color: '#a78bfa', flexShrink: 0, marginTop: 2 }} />
+                <div>
+                  <p style={{ fontWeight: 600, marginBottom: 2 }}>App diperbarui! 🎉</p>
+                  <p style={{ fontSize: 11, color: '#94a3b8' }}>
+                    v{from} → v{to} · Cache stale otomatis dibersihkan
+                  </p>
+                </div>
+              </div>
+            ),
+            {
+              duration: 4000,
+              icon: null,
+            }
+          );
+        }, 1500);
+      }
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Theme setup
   useEffect(() => {
     const root = document.documentElement;
