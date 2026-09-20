@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import { formatIDR, formatDate, formatCompactIDR } from '../utils/currency';
+import { isWalletLocked, lockedWalletMessage } from '../utils/calculations';
 import { sendWebhook } from '../utils/webhook';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -165,6 +166,11 @@ export default function BudgetPlans({ openModal, onModalStateChange }) {
       return;
     }
 
+    if (isWalletLocked(wallets, form.walletId)) {
+      toast.error(lockedWalletMessage(wallets, form.walletId, 'alokasi budget'));
+      return;
+    }
+
     // Check available balance (wallet balance minus existing allocations)
     const walletBalance = walletBalances[form.walletId] || 0;
     const alreadyAllocated = allocatedPerWallet[form.walletId] || 0;
@@ -239,6 +245,12 @@ export default function BudgetPlans({ openModal, onModalStateChange }) {
   };
 
   const handlePayment = async (plan) => {
+    if (isWalletLocked(wallets, plan.walletId)) {
+      toast.error(lockedWalletMessage(wallets, plan.walletId, 'pembayaran budget'));
+      setPayPlanId(null);
+      return;
+    }
+
     const now = new Date().toISOString();
 
     // Create expense transaction
@@ -569,7 +581,7 @@ export default function BudgetPlans({ openModal, onModalStateChange }) {
                 const avail = balance - allocated + editAmt;
                 return (
                   <option key={w.id} value={w.id}>
-                    {w.icon} {w.name} (Tersedia: {formatIDR(avail)})
+                    {w.isLocked ? '🔒 ' : ''}{w.icon} {w.name} (Tersedia: {formatIDR(avail)})
                   </option>
                 );
               })}

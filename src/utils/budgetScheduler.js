@@ -220,6 +220,26 @@ export async function runBudgetScheduler() {
 
     for (const plan of duePlans) {
       try {
+        // Never move money out of a locked wallet automatically
+        const wallet = walletMap?.[plan.walletId];
+        if (wallet?.isLocked) {
+          await db.logs.add({
+            id: crypto.randomUUID(),
+            action: 'budget_auto_pay_failed',
+            details: { planId: plan.id, reason: 'wallet_locked', walletId: plan.walletId },
+            createdAt: new Date().toISOString(),
+          });
+          sendWebhook('budget_auto_pay_failed', {
+            planId: plan.id,
+            name: plan.name,
+            amount: plan.amount,
+            wallet: wallet.name,
+            reason: 'wallet_locked',
+            message: `⚠️ Auto-payment "${plan.name}" dilewati: wallet "${wallet.name}" terkunci.`,
+          });
+          continue;
+        }
+
         const result = await executeAutoPayment(plan, walletMap);
         results.push({ plan, ...result });
       } catch (err) {

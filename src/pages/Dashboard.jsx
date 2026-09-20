@@ -3,7 +3,8 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import { formatIDR, formatDate, formatCompactIDR } from '../utils/currency';
 import { calculateFinancialRatios } from '../utils/financialRatios';
-import { calculateWalletBalances, calculateNetBalance, calculateTotalBalance, getSavingsWalletBalance, getAvailableBalanceForSpending } from '../utils/calculations';
+import { calculateWalletBalances, calculateTotalBalance } from '../utils/calculations';
+import { calcSavingsSummary } from '../utils/savingsTargets';
 import {
   TrendingUp,
   TrendingDown,
@@ -16,6 +17,7 @@ import {
   CheckCircle,
   ClipboardList,
   Banknote,
+  PiggyBank,
 } from 'lucide-react';
 
 const getGreeting = () => {
@@ -32,6 +34,8 @@ export default function Dashboard({ onNavigate, userProfile: userProfileProp }) 
   const transactions = useLiveQuery(() => db.transactions.orderBy('date').reverse().toArray()) || [];
   const categories = useLiveQuery(() => db.categories.toArray()) || [];
   const budgetPlans = useLiveQuery(() => db.budgetPlans.toArray()) || [];
+  const savingsTargets = useLiveQuery(() => db.savingsTargets.toArray()) || [];
+  const savingsDeposits = useLiveQuery(() => db.savingsDeposits.toArray()) || [];
   const walletOrderSetting = useLiveQuery(() => db.settings.get('walletOrder'));
   const userProfileSetting = useLiveQuery(() => db.settings.get('userProfile'));
   const userProfile = userProfileSetting?.value || userProfileProp;
@@ -62,8 +66,9 @@ export default function Dashboard({ onNavigate, userProfile: userProfileProp }) 
   
   // Calculate different types of balances
   const totalBalance = calculateTotalBalance(walletBalances);
-  const netBalance = calculateNetBalance(wallets, walletBalances); // Excluding savings
-  const savingsBalance = getSavingsWalletBalance(wallets, walletBalances);
+
+  // Savings are goal-based now: the ledger tracks how much is earmarked
+  const savingsSummary = calcSavingsSummary(savingsTargets, savingsDeposits);
 
   // Monthly summary
   const monthlyTx = transactions.filter((t) => t.date >= monthStart && t.date <= monthEnd);
@@ -125,12 +130,12 @@ export default function Dashboard({ onNavigate, userProfile: userProfileProp }) 
       textColor: 'text-red-400',
     },
     {
-      label: 'Net Balance (excl. Savings)',
-      value: netBalance,
+      label: 'Tabungan Target',
+      value: savingsSummary.totalSaved,
       icon: DollarSign,
-      gradient: netBalance >= 0 ? 'from-blue-600 to-cyan-600' : 'from-orange-600 to-red-600',
-      iconBg: netBalance >= 0 ? 'bg-blue-500/20' : 'bg-orange-500/20',
-      textColor: netBalance >= 0 ? 'text-blue-400' : 'text-red-400',
+      gradient: savingsSummary.totalSaved >= 0 ? 'from-blue-600 to-cyan-600' : 'from-orange-600 to-red-600',
+      iconBg: savingsSummary.totalSaved >= 0 ? 'bg-blue-500/20' : 'bg-orange-500/20',
+      textColor: savingsSummary.totalSaved >= 0 ? 'text-blue-400' : 'text-red-400',
     },
   ];
 
@@ -186,6 +191,35 @@ export default function Dashboard({ onNavigate, userProfile: userProfileProp }) 
             <div className="text-right shrink-0">
               <p className="text-sm font-bold text-indigo-400">{formatCompactIDR(totalAllocated)}</p>
               <ChevronRight size={14} className="text-surface-500 ml-auto" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Savings Targets Widget */}
+      {savingsSummary.targetCount > 0 && (
+        <div className="card mb-4 cursor-pointer hover:border-emerald-500/30 transition-all" onClick={() => onNavigate('savings')}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+              <PiggyBank size={18} className="text-emerald-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white">Tabungan Target</p>
+              <p className="text-[11px] text-surface-500">
+                {savingsSummary.targetCount} target • {savingsSummary.achievedCount} tercapai
+              </p>
+              <div className="h-1.5 bg-surface-800 rounded-full overflow-hidden mt-1.5">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
+                  style={{ width: `${Math.min(100, savingsSummary.progress)}%` }}
+                />
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-sm font-bold text-emerald-400">{formatCompactIDR(savingsSummary.totalSaved)}</p>
+              <p className="text-[10px] text-surface-500">
+                {savingsSummary.progress.toFixed(0)}% dari {formatCompactIDR(savingsSummary.totalTarget)}
+              </p>
             </div>
           </div>
         </div>

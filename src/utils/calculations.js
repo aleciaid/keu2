@@ -25,39 +25,43 @@ export function calculateWalletBalances(wallets, transactions) {
 }
 
 /**
- * Calculate total balance excluding savings wallet
- */
-export function calculateNetBalance(wallets, walletBalances) {
-  let totalBalance = 0;
-  
-  wallets.forEach((wallet) => {
-    // Exclude fixed savings wallet from net balance
-    if (!wallet.isFixed) {
-      totalBalance += walletBalances[wallet.id] || 0;
-    }
-  });
-
-  return totalBalance;
-}
-
-/**
- * Calculate total balance including all wallets
+ * Calculate total balance across all wallets.
+ *
+ * Savings targets are goals, not balances: money saved for a target stays in
+ * its destination wallet, so it is already included here.
  */
 export function calculateTotalBalance(walletBalances) {
   return Object.values(walletBalances).reduce((a, b) => a + b, 0);
 }
 
 /**
- * Get savings wallet balance
+ * A locked wallet cannot be used as the source of any outgoing money
+ * (expense, transfer, debt, budget payment or savings deposit) until it is
+ * unlocked. Incoming money is always allowed.
  */
-export function getSavingsWalletBalance(wallets, walletBalances) {
-  const savingsWallet = wallets.find(w => w.isFixed === true);
-  return savingsWallet ? (walletBalances[savingsWallet.id] || 0) : 0;
+export function isWalletLocked(wallets, walletId) {
+  if (!walletId) return false;
+  const wallet = (wallets || []).find((w) => w.id === walletId);
+  return Boolean(wallet?.isLocked);
+}
+
+export function getLockedWalletIds(wallets) {
+  return (wallets || []).filter((w) => w.isLocked).map((w) => w.id);
 }
 
 /**
- * Calculate available balance for spending (net balance excluding savings)
+ * Human-readable error message for a blocked locked-wallet action.
  */
-export function getAvailableBalanceForSpending(wallets, walletBalances) {
-  return calculateNetBalance(wallets, walletBalances);
+export function lockedWalletMessage(wallets, walletId, action = 'transaksi') {
+  const wallet = (wallets || []).find((w) => w.id === walletId);
+  const name = wallet ? wallet.name : 'Wallet';
+  return `Wallet "${name}" terkunci. Unlock dulu untuk melakukan ${action}.`;
+}
+
+/** Total balance sitting in locked wallets. */
+export function calculateLockedBalance(wallets, walletBalances) {
+  return (wallets || []).reduce(
+    (sum, w) => (w.isLocked ? sum + (walletBalances[w.id] || 0) : sum),
+    0,
+  );
 }

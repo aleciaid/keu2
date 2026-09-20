@@ -22,6 +22,52 @@ db.version(9).stores({
   budgetPlans: 'id, name, walletId, categoryId, status, dueDate, recurrence, nextDueDate, parentPlanId, createdAt, updatedAt',
 });
 
+// v10: Savings targets (goal-based) with per-target source wallet + deposit ledger
+db.version(10).stores({
+  savingsTargets: 'id, name, sourceWalletId, destinationWalletId, deadline, createdAt, updatedAt',
+  savingsDeposits: 'id, targetId, sourceWalletId, destinationWalletId, type, date, transactionId, createdAt',
+}).upgrade(async (tx) => {
+  // The old model used one fixed wallet as "the savings balance". Savings are
+  // now goals, so turn that wallet back into an ordinary wallet.
+  await tx.table('wallets').toCollection().modify((wallet) => {
+    if (wallet.isFixed === true) {
+      delete wallet.isFixed;
+      if (wallet.name === 'Tabungan Target') {
+        wallet.name = 'Saving';
+      }
+    }
+  });
+});
+
+// v11: Drop the auto-seeded default savings wallet. Savings live in
+// `savingsTargets` now, and the wallet itself should be the user's own choice.
+// Only an untouched, unused, auto-generated wallet is removed.
+db.version(11).stores({
+  wallets: 'id, name, createdAt, updatedAt',
+}).upgrade(async (tx) => {
+  const wallets = await tx.table('wallets').toArray();
+  const targets = await tx.table('savingsTargets').toArray();
+  const transactions = await tx.table('transactions').toArray();
+
+  for (const wallet of wallets) {
+    const isAutoSeed =
+      wallet.id?.startsWith('wallet-savings-') ||
+      wallet.name === 'Tabungan Target' ||
+      wallet.name === 'Saving';
+    if (!isAutoSeed) continue;
+    if (wallet.initialBalance) continue;
+
+    const used =
+      targets.some((t) => t.sourceWalletId === wallet.id || t.destinationWalletId === wallet.id) ||
+      transactions.some(
+        (t) => t.walletId === wallet.id || t.fromWalletId === wallet.id || t.toWalletId === wallet.id,
+      );
+    if (used) continue;
+
+    await tx.table('wallets').delete(wallet.id);
+  }
+});
+
 // Default categories
 export const DEFAULT_CATEGORIES = [
   // Income
@@ -93,6 +139,7 @@ export async function seedDatabase() {
         { key: 'appVersion', value: '1.0.0' },
         { key: 'theme', value: 'dark' },
         { key: 'savingsGoalPercentage', value: 20 },
+        { key: 'savingsTargetDepositAsTransfer', value: true },
       ];
 
       for (const setting of settingsToCheck) {
@@ -105,29 +152,7 @@ export async function seedDatabase() {
       console.error('Error seeding settings:', error);
     }
 
-    // 3. Create default fixed savings wallet
-    try {
-      const allWallets = await db.wallets.toArray();
-      const fixedWalletExists = allWallets.some(w => w.isFixed === true);
-
-      if (!fixedWalletExists) {
-        await db.wallets.put({
-          id: `wallet-savings-${crypto.randomUUID()}`,
-          name: 'Tabungan Target',
-          createdAt: now,
-          updatedAt: now,
-          isFixed: true,
-          amount: 0,
-          icon: '💰',
-          color: '#10b981',
-          initialBalance: 0
-        });
-      }
-    } catch (error) {
-      console.error('Error seeding fixed wallet:', error);
-    }
-
-    // 4. Ensure device UUID is generated
+    // 3. Ensure device UUID is generated
     try {
       await getDeviceUUID();
     } catch (error) {

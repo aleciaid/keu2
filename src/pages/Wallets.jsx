@@ -3,6 +3,8 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import { formatIDR, formatDate, formatCompactIDR } from '../utils/currency';
 import { sendWebhook } from '../utils/webhook';
+import { calcSavedPerWallet } from '../utils/savingsTargets';
+import { calculateWalletBalances, calculateTotalBalance, calculateLockedBalance } from '../utils/calculations';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AmountInput from '../components/AmountInput';
@@ -28,6 +30,8 @@ import {
   Target,
   Flame,
   BadgeCheck,
+  Lock,
+  LockOpen,
 } from 'lucide-react';
 
 // ─── Savings Analysis Component ──────────────────────────────────────────────
@@ -443,6 +447,8 @@ const WALLET_COLORS = [
 export default function Wallets({ openModal, onModalStateChange }) {
   const wallets = useLiveQuery(() => db.wallets.toArray()) || [];
   const transactions = useLiveQuery(() => db.transactions.toArray()) || [];
+  const savingsTargets = useLiveQuery(() => db.savingsTargets.toArray()) || [];
+  const savingsDeposits = useLiveQuery(() => db.savingsDeposits.toArray()) || [];
   const walletOrderSetting = useLiveQuery(() => db.settings.get('walletOrder'));
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -455,6 +461,7 @@ export default function Wallets({ openModal, onModalStateChange }) {
     }
   }, [openModal, onModalStateChange]);
   const [deleteId, setDeleteId] = useState(null);
+  const [lockConfirm, setLockConfirm] = useState(null);
   const [reorderMode, setReorderMode] = useState(false);
   const [walletOrder, setWalletOrder] = useState([]);
 
@@ -555,22 +562,19 @@ export default function Wallets({ openModal, onModalStateChange }) {
   });
 
   // Calculate wallet balances
-  const walletBalances = {};
-  wallets.forEach((w) => {
-    walletBalances[w.id] = w.initialBalance || 0;
-  });
-  transactions.forEach((t) => {
-    if (t.type === 'income' || t.type === 'debt_repayment') {
-      walletBalances[t.walletId] = (walletBalances[t.walletId] || 0) + t.amount;
-    } else if (t.type === 'expense' || t.type === 'debt') {
-      walletBalances[t.walletId] = (walletBalances[t.walletId] || 0) - t.amount;
-    } else if (t.type === 'transfer') {
-      walletBalances[t.fromWalletId] = (walletBalances[t.fromWalletId] || 0) - t.amount;
-      walletBalances[t.toWalletId] = (walletBalances[t.toWalletId] || 0) + t.amount;
-    }
-  });
+  const walletBalances = calculateWalletBalances(wallets, transactions);
+  const totalBalance = calculateTotalBalance(walletBalances);
 
-  const totalBalance = Object.values(walletBalances).reduce((a, b) => a + b, 0);
+  // Amount of each wallet's balance that is earmarked for a savings target
+  const savedPerWallet = useMemo(
+    () => calcSavedPerWallet(savingsTargets, savingsDeposits),
+    [savingsTargets, savingsDeposits],
+  );
+
+  const lockedBalance = useMemo(
+    () => calculateLockedBalance(wallets, walletBalances),
+    [wallets, walletBalances],
+  );
 
   const openCreate = () => {
     setEditWallet(null);
@@ -679,6 +683,42 @@ export default function Wallets({ openModal, onModalStateChange }) {
     setDeleteId(null);
   };
 
+  const handleToggleLock = async (wallet) => {
+    const now = new Date().toISOString();
+    const nextLocked = !wallet.isLocked;
+
+    if (nextLocked) {
+      // Blocking a wallet that still has savings targets attached would strand
+      // the target deposits, so require the targets to be pointed elsewhere.
+      const linkedTargets = (savingsTargets || []).filter(
+        (t) => t.sourceWalletId === wallet.id || t.destinationWalletId === wallet.id,
+      );
+      if (linkedTargets.length > 0) {
+        toast.error(
+          `Wallet dipakai oleh ${linkedTargets.length} target tabungan. Ubah wallet target terlebih dahulu.`,
+        );
+        return;
+      }
+    }
+
+    await db.wallets.update(wallet.id, { isLocked: nextLocked, updatedAt: now });
+
+    await db.logs.add({
+      id: crypto.randomUUID(),
+      action: nextLocked ? 'wallet_locked' : 'wallet_unlocked',
+      details: { walletId: wallet.id, name: wallet.name },
+      createdAt: now,
+    });
+
+    sendWebhook(nextLocked ? 'wallet_locked' : 'wallet_unlocked', {
+      id: wallet.id,
+      name: wallet.name,
+      balance: walletBalances[wallet.id] || 0,
+    });
+
+    toast.success(nextLocked ? `Wallet "${wallet.name}" dikunci` : `Wallet "${wallet.name}" dibuka`);
+  };
+
   return (
     <div className="page-container">
       <div className="page-header">
@@ -715,6 +755,25 @@ export default function Wallets({ openModal, onModalStateChange }) {
           {formatIDR(totalBalance)}
         </p>
         <p className="text-xs text-surface-500 mt-1">{wallets.length} wallet aktif</p>
+
+        {lockedBalance > 0 && (
+          <div className="mt-3 pt-3 border-t border-surface-700/40 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-[11px] text-amber-400">
+                <Lock size={11} /> Dana terkunci
+              </span>
+              <span className="text-[11px] font-bold text-amber-400">{formatIDR(lockedBalance)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-[11px] text-emerald-400">
+                <LockOpen size={11} /> Bisa dipakai
+              </span>
+              <span className="text-[11px] font-bold text-emerald-400">
+                {formatIDR(Math.max(0, totalBalance - lockedBalance))}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Savings Analysis Section */}
@@ -793,13 +852,30 @@ export default function Wallets({ openModal, onModalStateChange }) {
                     {wallet.icon || '💳'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-semibold text-white">{wallet.name}</h4>
-                    <p className={`text-lg font-bold ${balance < 0 ? 'text-red-400' : 'text-white'}`}>
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="text-sm font-semibold text-white truncate">{wallet.name}</h4>
+                      {wallet.isLocked && (
+                        <span className="flex items-center gap-0.5 text-[9px] font-medium text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded-full shrink-0">
+                          <Lock size={8} /> Terkunci
+                        </span>
+                      )}
+                    </div>
+                    <p className={`text-lg font-bold ${wallet.isLocked ? 'text-amber-300' : balance < 0 ? 'text-red-400' : 'text-white'}`}>
                       {formatIDR(balance)}
                     </p>
                     {!reorderMode && (
                       <p className="text-[10px] text-surface-500">
                         Saldo awal: {formatIDR(wallet.initialBalance)}
+                      </p>
+                    )}
+                    {!reorderMode && savedPerWallet[wallet.id] > 0 && (
+                      <p className="text-[10px] text-emerald-400 mt-0.5">
+                        🎯 Dana tabungan: {formatIDR(savedPerWallet[wallet.id])}
+                      </p>
+                    )}
+                    {!reorderMode && wallet.isLocked && (
+                      <p className="text-[10px] text-amber-400/80 mt-0.5">
+                        Dana tidak bisa ditransaksikan sampai dibuka
                       </p>
                     )}
                   </div>
@@ -832,6 +908,17 @@ export default function Wallets({ openModal, onModalStateChange }) {
                     </div>
                   ) : (
                     <div className="flex gap-1">
+                      <button
+                        onClick={() => setLockConfirm(wallet)}
+                        title={wallet.isLocked ? 'Buka kunci wallet' : 'Kunci wallet'}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                          wallet.isLocked
+                            ? 'bg-amber-500/15 text-amber-400 hover:bg-amber-500/25'
+                            : 'bg-surface-800 text-surface-400 hover:bg-amber-500/20 hover:text-amber-400'
+                        }`}
+                      >
+                        {wallet.isLocked ? <Lock size={14} /> : <LockOpen size={14} />}
+                      </button>
                       <button
                         onClick={() => openEdit(wallet)}
                         className="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-800 hover:bg-primary-500/20 text-surface-400 hover:text-primary-400 transition-colors"
@@ -929,6 +1016,46 @@ export default function Wallets({ openModal, onModalStateChange }) {
         title="Hapus Wallet?"
         message="Wallet yang dihapus tidak dapat dikembalikan. Pastikan tidak ada transaksi yang terkait."
       />
+
+      {/* Lock / Unlock confirm */}
+      {lockConfirm && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setLockConfirm(null); }}>
+          <div className="modal-content sm:max-w-sm animate-scaleIn">
+            <div className="p-6 text-center">
+              <div className={`w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                lockConfirm.isLocked ? 'bg-emerald-500/15' : 'bg-amber-500/15'
+              }`}>
+                {lockConfirm.isLocked
+                  ? <LockOpen className="w-7 h-7 text-emerald-400" />
+                  : <Lock className="w-7 h-7 text-amber-400" />}
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">
+                {lockConfirm.isLocked ? 'Buka Kunci Wallet?' : 'Kunci Wallet Ini?'}
+              </h3>
+              <p className="text-sm font-medium text-white mb-1">
+                {lockConfirm.icon} {lockConfirm.name}
+              </p>
+              <p className="text-xl font-bold mb-3 text-amber-400">
+                {formatIDR(walletBalances[lockConfirm.id] || 0)}
+              </p>
+              <p className="text-xs text-surface-500 mb-6">
+                {lockConfirm.isLocked
+                  ? 'Setelah dibuka, dana bisa dipakai untuk transaksi, transfer, dan pembayaran budget lagi.'
+                  : 'Selama terkunci, wallet ini tidak bisa dipakai sebagai sumber pengeluaran, transfer, hutang, budget, maupun setoran tabungan.'}
+              </p>
+              <div className="flex gap-3">
+                <button onClick={() => setLockConfirm(null)} className="btn-ghost flex-1">Batal</button>
+                <button
+                  onClick={() => { handleToggleLock(lockConfirm); setLockConfirm(null); }}
+                  className={lockConfirm.isLocked ? 'btn-success flex-1' : 'btn-primary flex-1'}
+                >
+                  {lockConfirm.isLocked ? <><LockOpen size={14} /> Buka</> : <><Lock size={14} /> Kunci</>}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -13,6 +13,8 @@ export async function exportData() {
     const logs = await db.logs.toArray();
     const settings = await db.settings.toArray();
     const budgetPlans = await db.budgetPlans.toArray();
+    const savingsTargets = await db.savingsTargets.toArray();
+    const savingsDeposits = await db.savingsDeposits.toArray();
 
     const data = {
       metadata: {
@@ -24,6 +26,8 @@ export async function exportData() {
           categories: categories.length,
           logs: logs.length,
           budgetPlans: budgetPlans.length,
+          savingsTargets: savingsTargets.length,
+          savingsDeposits: savingsDeposits.length,
         },
       },
       wallets,
@@ -32,6 +36,8 @@ export async function exportData() {
       logs,
       settings,
       budgetPlans,
+      savingsTargets,
+      savingsDeposits,
     };
 
     const now = new Date();
@@ -103,6 +109,8 @@ export async function importData(data, mode = 'replace') {
       await db.categories.clear();
       await db.logs.clear();
       if (db.budgetPlans) await db.budgetPlans.clear();
+      if (db.savingsTargets) await db.savingsTargets.clear();
+      if (db.savingsDeposits) await db.savingsDeposits.clear();
 
       // Import all data with error handling
       try {
@@ -188,6 +196,34 @@ export async function importData(data, mode = 'replace') {
       } catch (e) {
         console.error('Error importing budget plans:', e);
       }
+
+      try {
+        if (data.savingsTargets?.length) {
+          for (const st of data.savingsTargets) {
+            try {
+              await db.savingsTargets.put(st);
+            } catch (e) {
+              console.warn(`Failed to import savings target ${st.id}:`, e);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error importing savings targets:', e);
+      }
+
+      try {
+        if (data.savingsDeposits?.length) {
+          for (const sd of data.savingsDeposits) {
+            try {
+              await db.savingsDeposits.put(sd);
+            } catch (e) {
+              console.warn(`Failed to import savings deposit ${sd.id}:`, e);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error importing savings deposits:', e);
+      }
     } else {
       // Merge mode: skip duplicates
       if (data.wallets?.length) {
@@ -237,6 +273,26 @@ export async function importData(data, mode = 'replace') {
             if (!exists) await db.budgetPlans.add(bp);
           } catch (e) {
             console.warn(`Failed to merge budget plan ${bp.id}:`, e);
+          }
+        }
+      }
+      if (data.savingsTargets?.length) {
+        for (const st of data.savingsTargets) {
+          try {
+            const exists = await db.savingsTargets.get(st.id);
+            if (!exists) await db.savingsTargets.add(st);
+          } catch (e) {
+            console.warn(`Failed to merge savings target ${st.id}:`, e);
+          }
+        }
+      }
+      if (data.savingsDeposits?.length) {
+        for (const sd of data.savingsDeposits) {
+          try {
+            const exists = await db.savingsDeposits.get(sd.id);
+            if (!exists) await db.savingsDeposits.add(sd);
+          } catch (e) {
+            console.warn(`Failed to merge savings deposit ${sd.id}:`, e);
           }
         }
       }

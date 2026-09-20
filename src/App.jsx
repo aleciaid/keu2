@@ -10,6 +10,7 @@ import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
 import Wallets from './pages/Wallets';
+import SavingsTargets from './pages/SavingsTargets';
 import Settings from './pages/Settings';
 import BudgetPlans from './pages/BudgetPlans';
 
@@ -18,6 +19,7 @@ export default function App() {
   const [dbReady, setDbReady] = useState(false);
   const [openTransactionModal, setOpenTransactionModal] = useState(false);
   const [openWalletModal, setOpenWalletModal] = useState(false);
+  const [openSavingsModal, setOpenSavingsModal] = useState(false);
   const [openBudgetModal, setOpenBudgetModal] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -157,6 +159,7 @@ export default function App() {
   const handleNavigate = useCallback((p) => {
     setPage(p);
     setOpenWalletModal(false);
+    setOpenSavingsModal(false);
     setOpenTransactionModal(false);
     setOpenBudgetModal(false);
   }, []);
@@ -244,18 +247,21 @@ export default function App() {
         {page === 'dashboard' && <Dashboard onNavigate={handleNavigate} userProfile={userProfile} />}
         {page === 'transactions' && <Transactions openModal={openTransactionModal} onModalStateChange={setOpenTransactionModal} />}
         {page === 'wallets' && <Wallets openModal={openWalletModal} onModalStateChange={setOpenWalletModal} />}
+        {page === 'savings' && <SavingsTargets openModal={openSavingsModal} onModalStateChange={setOpenSavingsModal} />}
         {page === 'budget' && <BudgetPlans openModal={openBudgetModal} onModalStateChange={setOpenBudgetModal} />}
         {page === 'settings' && <Settings />}
       </main>
 
       {/* FAB - Add Transaction / Wallet / Budget */}
-      {(page === 'dashboard' || page === 'transactions' || page === 'wallets' || page === 'budget') && (
+      {(page === 'dashboard' || page === 'transactions' || page === 'wallets' || page === 'budget' || page === 'savings') && (
         <button
           onClick={() => {
             if (page === 'wallets') {
               setOpenWalletModal(true);
             } else if (page === 'budget') {
               setOpenBudgetModal(true);
+            } else if (page === 'savings') {
+              setOpenSavingsModal(true);
             } else if (page !== 'transactions') {
               setPage('transactions');
               setTimeout(() => {

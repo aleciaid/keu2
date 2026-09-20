@@ -25,23 +25,18 @@ export async function calculateFinancialRatios() {
   
   const totalDebt = debtTransactions.reduce((sum, t) => sum + t.amount, 0);
 
-  // Get savings (assuming fixed savings wallet)
-  const savingsWallet = await db.wallets
-    .filter(w => w.isFixed === true)
-    .first();
-  
-  // Calculate savings wallet balance from transactions
-  let totalSavings = savingsWallet ? (savingsWallet.initialBalance || 0) : 0;
-  
-  if (savingsWallet) {
-    const savingsTransactions = await db.transactions.toArray();
-    savingsTransactions.forEach(t => {
-      if (t.toWalletId === savingsWallet.id) {
-        totalSavings += t.amount;
-      } else if (t.fromWalletId === savingsWallet.id) {
-        totalSavings -= t.amount;
-      }
+  // Savings come from the savings-target ledger (goal-based), which knows
+  // exactly how much of each wallet is earmarked for saving.
+  const savingsTargets = await db.savingsTargets.toArray();
+  const savingsDeposits = await db.savingsDeposits.toArray();
+
+  let totalSavings = 0;
+
+  if (savingsTargets.length > 0 || savingsDeposits.length > 0) {
+    savingsDeposits.forEach((d) => {
+      totalSavings += d.type === 'withdraw' ? -(d.amount || 0) : (d.amount || 0);
     });
+    totalSavings = Math.max(0, totalSavings);
   }
 
   // Retrieve ideal percentages
