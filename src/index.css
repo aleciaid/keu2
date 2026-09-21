@@ -39,6 +39,9 @@
   --border-color: rgba(30, 41, 59, 0.5);
   --card-bg: rgba(15, 23, 42, 0.8);
   --input-bg: #1e293b;
+
+  /* Height of the fixed top app bar */
+  --top-nav-h: 3.5rem;
 }
 
 /* CSS Variables - Light Mode */
@@ -370,11 +373,18 @@ html.light .bottom-nav {
   margin-right: auto;
 }
 
-/* Sticky app bar (Settings lives here now, not in the bottom nav) */
+/* Sticky app bar (Settings lives here now, not in the bottom nav).
+   Uses `fixed` rather than `sticky` so it stays pinned on Android/iOS
+   WebViews, where a `sticky` element that also has `backdrop-filter` can fail
+   to stick while the page scrolls. Height is published as --top-nav-h so the
+   content below can reserve exactly the right amount of space. */
 .top-nav {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 50;
+  min-height: var(--top-nav-h);
   background: rgba(15, 23, 42, 0.95);
   backdrop-filter: blur(24px);
   border-bottom: 1px solid rgba(30, 41, 59, 0.5);
@@ -386,9 +396,10 @@ html.light .top-nav {
   border-bottom: 1px solid rgba(226, 232, 240, 0.5);
 }
 
-/* Space reserved under the sticky top nav */
+/* Content sits below the fixed bar */
 .app-main {
   min-height: 100vh;
+  padding-top: var(--top-nav-h);
 }
 
 .page-header {
