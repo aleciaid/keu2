@@ -40,8 +40,12 @@
   --card-bg: rgba(15, 23, 42, 0.8);
   --input-bg: #1e293b;
 
-  /* Height of the fixed top app bar */
-  --top-nav-h: 3.5rem;
+  /* Height of the fixed top app bar.
+     --top-nav-content-h is the bar's own height; --top-nav-h additionally
+     includes the iOS status-bar/notch inset so page content clears the bar.
+     Computed in CSS so the layout is already correct before JS measures. */
+  --top-nav-content-h: 3.5rem;
+  --top-nav-h: calc(var(--top-nav-content-h) + env(safe-area-inset-top, 0px));
 }
 
 /* CSS Variables - Light Mode */
@@ -384,11 +388,13 @@ html.light .bottom-nav {
   left: 0;
   right: 0;
   z-index: 50;
-  min-height: var(--top-nav-h);
   background: rgba(15, 23, 42, 0.95);
   backdrop-filter: blur(24px);
   border-bottom: 1px solid rgba(30, 41, 59, 0.5);
   color: var(--text-primary);
+  /* Push the bar's content below the iOS status bar / notch. Without this a
+     fixed bar at top:0 renders underneath it and appears to sink. */
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 html.light .top-nav {

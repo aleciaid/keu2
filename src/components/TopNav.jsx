@@ -17,6 +17,9 @@ export default function TopNav({ active, onNavigate, title = 'FinTrack' }) {
     const el = ref.current;
     if (!el) return;
 
+    // offsetHeight includes padding and border, so on iOS it already accounts
+    // for the safe-area top padding. Publishing it directly keeps the reserved
+    // space exactly equal to the bar's rendered height on every device.
     const publishHeight = () => {
       const h = el.offsetHeight;
       if (h > 0) {
