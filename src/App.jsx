@@ -5,12 +5,15 @@ import { Plus, User, Sparkles, Zap } from 'lucide-react';
 import { db, seedDatabase, resetDatabase } from './db/database';
 import { ThemeProvider } from './context/ThemeContext';
 import { runBudgetScheduler } from './utils/budgetScheduler';
+import { runAssetScheduler } from './utils/assets';
 import { checkAndApplyUpdate, getCurrentVersion } from './utils/appUpdater';
 import BottomNav from './components/BottomNav';
+import TopNav from './components/TopNav';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
 import Wallets from './pages/Wallets';
 import SavingsTargets from './pages/SavingsTargets';
+import Assets from './pages/Assets';
 import Settings from './pages/Settings';
 import BudgetPlans from './pages/BudgetPlans';
 
@@ -20,6 +23,7 @@ export default function App() {
   const [openTransactionModal, setOpenTransactionModal] = useState(false);
   const [openWalletModal, setOpenWalletModal] = useState(false);
   const [openSavingsModal, setOpenSavingsModal] = useState(false);
+  const [openAssetModal, setOpenAssetModal] = useState(false);
   const [openBudgetModal, setOpenBudgetModal] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -113,7 +117,7 @@ export default function App() {
     loadProfile();
   }, [dbReady]);
 
-  // Run budget scheduler on startup and every 60 seconds
+  // Run budget + subscription schedulers on startup and every 60 seconds
   useEffect(() => {
     if (!dbReady || !profileLoaded) return;
 
@@ -124,9 +128,16 @@ export default function App() {
       }
     });
 
+    runAssetScheduler().then((results) => {
+      if (results.length > 0) {
+        console.log(`[AssetScheduler] Auto-charged ${results.length} subscription(s)`);
+      }
+    });
+
     // Check periodically (every 60s)
     const interval = setInterval(() => {
       runBudgetScheduler();
+      runAssetScheduler();
     }, 60_000);
 
     return () => clearInterval(interval);
@@ -160,6 +171,7 @@ export default function App() {
     setPage(p);
     setOpenWalletModal(false);
     setOpenSavingsModal(false);
+    setOpenAssetModal(false);
     setOpenTransactionModal(false);
     setOpenBudgetModal(false);
   }, []);
@@ -243,17 +255,20 @@ export default function App() {
         }}
       />
 
-      <main className="min-h-screen">
+      <TopNav active={page} onNavigate={handleNavigate} />
+
+      <main className="app-main">
         {page === 'dashboard' && <Dashboard onNavigate={handleNavigate} userProfile={userProfile} />}
         {page === 'transactions' && <Transactions openModal={openTransactionModal} onModalStateChange={setOpenTransactionModal} />}
         {page === 'wallets' && <Wallets openModal={openWalletModal} onModalStateChange={setOpenWalletModal} />}
         {page === 'savings' && <SavingsTargets openModal={openSavingsModal} onModalStateChange={setOpenSavingsModal} />}
+        {page === 'assets' && <Assets openModal={openAssetModal} onModalStateChange={setOpenAssetModal} />}
         {page === 'budget' && <BudgetPlans openModal={openBudgetModal} onModalStateChange={setOpenBudgetModal} />}
         {page === 'settings' && <Settings />}
       </main>
 
-      {/* FAB - Add Transaction / Wallet / Budget */}
-      {(page === 'dashboard' || page === 'transactions' || page === 'wallets' || page === 'budget' || page === 'savings') && (
+      {/* FAB - Add Transaction / Wallet / Budget / Savings / Asset */}
+      {(page === 'dashboard' || page === 'transactions' || page === 'wallets' || page === 'budget' || page === 'savings' || page === 'assets') && (
         <button
           onClick={() => {
             if (page === 'wallets') {
@@ -262,6 +277,8 @@ export default function App() {
               setOpenBudgetModal(true);
             } else if (page === 'savings') {
               setOpenSavingsModal(true);
+            } else if (page === 'assets') {
+              setOpenAssetModal(true);
             } else if (page !== 'transactions') {
               setPage('transactions');
               setTimeout(() => {

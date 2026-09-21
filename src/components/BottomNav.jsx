@@ -1,12 +1,12 @@
-import { LayoutDashboard, ArrowLeftRight, ClipboardList, PiggyBank, Wallet, Settings } from 'lucide-react';
+import { LayoutDashboard, ArrowLeftRight, ClipboardList, PiggyBank, Wallet, Gem } from 'lucide-react';
 
 const tabs = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'transactions', label: 'Transaksi', icon: ArrowLeftRight },
   { id: 'budget', label: 'Budget', icon: ClipboardList },
   { id: 'savings', label: 'Tabungan', icon: PiggyBank },
+  { id: 'assets', label: 'Aset', icon: Gem },
   { id: 'wallets', label: 'Wallet', icon: Wallet },
-  { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
 export default function BottomNav({ active, onNavigate }) {

@@ -5,6 +5,7 @@ import { formatIDR, formatDate, formatCompactIDR } from '../utils/currency';
 import { calculateFinancialRatios } from '../utils/financialRatios';
 import { calculateWalletBalances, calculateTotalBalance } from '../utils/calculations';
 import { calcSavingsSummary } from '../utils/savingsTargets';
+import { calcAssetSummary, getUpcomingSubscriptions } from '../utils/assets';
 import {
   TrendingUp,
   TrendingDown,
@@ -18,6 +19,9 @@ import {
   ClipboardList,
   Banknote,
   PiggyBank,
+  Gem,
+  RefreshCw,
+  CalendarClock,
 } from 'lucide-react';
 
 const getGreeting = () => {
@@ -36,6 +40,7 @@ export default function Dashboard({ onNavigate, userProfile: userProfileProp }) 
   const budgetPlans = useLiveQuery(() => db.budgetPlans.toArray()) || [];
   const savingsTargets = useLiveQuery(() => db.savingsTargets.toArray()) || [];
   const savingsDeposits = useLiveQuery(() => db.savingsDeposits.toArray()) || [];
+  const assets = useLiveQuery(() => db.assets.toArray()) || [];
   const walletOrderSetting = useLiveQuery(() => db.settings.get('walletOrder'));
   const userProfileSetting = useLiveQuery(() => db.settings.get('userProfile'));
   const userProfile = userProfileSetting?.value || userProfileProp;
@@ -69,6 +74,13 @@ export default function Dashboard({ onNavigate, userProfile: userProfileProp }) 
 
   // Savings are goal-based now: the ledger tracks how much is earmarked
   const savingsSummary = calcSavingsSummary(savingsTargets, savingsDeposits);
+
+  // Assets + subscriptions
+  const assetSummary = useMemo(() => calcAssetSummary(assets), [assets]);
+  const upcomingSubs = useMemo(
+    () => getUpcomingSubscriptions(assets.filter((a) => a.reminderEnabled !== false), 7),
+    [assets],
+  );
 
   // Monthly summary
   const monthlyTx = transactions.filter((t) => t.date >= monthStart && t.date <= monthEnd);
@@ -220,6 +232,82 @@ export default function Dashboard({ onNavigate, userProfile: userProfileProp }) 
               <p className="text-[10px] text-surface-500">
                 {savingsSummary.progress.toFixed(0)}% dari {formatCompactIDR(savingsSummary.totalTarget)}
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Subscription due reminders */}
+      {upcomingSubs.length > 0 && (
+        <div className="card mb-4 border-amber-500/30 bg-amber-500/5">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+              <CalendarClock size={15} className="text-amber-400" />
+            </div>
+            <p className="text-sm font-semibold text-white">
+              {upcomingSubs.filter((s) => s.daysLeft <= 0).length > 0
+                ? 'Langganan Jatuh Tempo'
+                : 'Langganan Mendekati Tempo'}
+            </p>
+          </div>
+          <div className="space-y-2">
+            {upcomingSubs.slice(0, 3).map((s) => (
+              <div
+                key={s.id}
+                className="flex items-center gap-2.5 p-2.5 rounded-xl bg-surface-800/50 cursor-pointer hover:bg-surface-800 transition-colors"
+                onClick={() => onNavigate('assets')}
+              >
+                <span className="text-base shrink-0">{s.icon || '🔄'}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-white truncate">{s.name}</p>
+                  <p className={`text-[10px] ${s.daysLeft < 0 ? 'text-red-400' : 'text-amber-400'}`}>
+                    {s.daysLeft < 0
+                      ? `Lewat ${Math.abs(s.daysLeft)} hari`
+                      : s.daysLeft === 0
+                        ? 'Jatuh tempo hari ini'
+                        : `${s.daysLeft} hari lagi`}
+                  </p>
+                </div>
+                <span className="text-xs font-bold text-white shrink-0">
+                  {formatCompactIDR(s.purchasePrice)}
+                </span>
+              </div>
+            ))}
+          </div>
+          {upcomingSubs.length > 3 && (
+            <button
+              onClick={() => onNavigate('assets')}
+              className="w-full mt-2 text-[11px] text-primary-400 hover:text-primary-300"
+            >
+              Lihat semua ({upcomingSubs.length})
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Assets Widget */}
+      {assetSummary.count > 0 && (
+        <div className="card mb-4 cursor-pointer hover:border-blue-500/30 transition-all" onClick={() => onNavigate('assets')}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center shrink-0">
+              <Gem size={18} className="text-blue-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white">Aset</p>
+              <p className="text-[11px] text-surface-500">
+                {assetSummary.physicalCount} fisik • {assetSummary.lifetimeCount} lifetime
+                {assetSummary.subscriptionCount > 0 && ` • ${assetSummary.subscriptionCount} langganan`}
+              </p>
+              {assetSummary.subscriptionMonthly > 0 && (
+                <p className="text-[10px] text-primary-400 mt-1 flex items-center gap-1">
+                  <RefreshCw size={9} />
+                  {formatCompactIDR(assetSummary.subscriptionMonthly)}/bulan langganan
+                </p>
+              )}
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-sm font-bold text-blue-400">{formatCompactIDR(assetSummary.totalValue)}</p>
+              <p className="text-[10px] text-surface-500">total nilai</p>
             </div>
           </div>
         </div>

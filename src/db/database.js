@@ -68,6 +68,11 @@ db.version(11).stores({
   }
 });
 
+// v12: Assets — physical possessions and digital assets (lifetime/subscription)
+db.version(12).stores({
+  assets: 'id, name, kind, digitalType, billingCycle, walletId, categoryId, nextDueDate, status, purchaseDate, createdAt, updatedAt',
+});
+
 // Default categories
 export const DEFAULT_CATEGORIES = [
   // Income

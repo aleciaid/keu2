@@ -255,6 +255,11 @@ export default function SettingsPage() {
       savings_target_deleted: '🎯 Target tabungan dihapus',
       savings_deposit: '💰 Setoran tabungan',
       savings_withdraw: '📤 Penarikan tabungan',
+      asset_created: '💎 Aset ditambahkan',
+      asset_updated: '💎 Aset diupdate',
+      asset_deleted: '💎 Aset dihapus',
+      asset_subscription_charged: '🔄 Langganan dibayar',
+      asset_subscription_failed: '⚠️ Langganan gagal dibayar',
       webhook_sent: '🌐 Webhook dikirim',
       webhook_failed: '⚠️ Webhook gagal',
     };

@@ -15,6 +15,7 @@ export async function exportData() {
     const budgetPlans = await db.budgetPlans.toArray();
     const savingsTargets = await db.savingsTargets.toArray();
     const savingsDeposits = await db.savingsDeposits.toArray();
+    const assets = await db.assets.toArray();
 
     const data = {
       metadata: {
@@ -28,6 +29,7 @@ export async function exportData() {
           budgetPlans: budgetPlans.length,
           savingsTargets: savingsTargets.length,
           savingsDeposits: savingsDeposits.length,
+          assets: assets.length,
         },
       },
       wallets,
@@ -38,6 +40,7 @@ export async function exportData() {
       budgetPlans,
       savingsTargets,
       savingsDeposits,
+      assets,
     };
 
     const now = new Date();
@@ -111,6 +114,7 @@ export async function importData(data, mode = 'replace') {
       if (db.budgetPlans) await db.budgetPlans.clear();
       if (db.savingsTargets) await db.savingsTargets.clear();
       if (db.savingsDeposits) await db.savingsDeposits.clear();
+      if (db.assets) await db.assets.clear();
 
       // Import all data with error handling
       try {
@@ -224,6 +228,20 @@ export async function importData(data, mode = 'replace') {
       } catch (e) {
         console.error('Error importing savings deposits:', e);
       }
+
+      try {
+        if (data.assets?.length) {
+          for (const a of data.assets) {
+            try {
+              await db.assets.put(a);
+            } catch (e) {
+              console.warn(`Failed to import asset ${a.id}:`, e);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error importing assets:', e);
+      }
     } else {
       // Merge mode: skip duplicates
       if (data.wallets?.length) {
@@ -293,6 +311,16 @@ export async function importData(data, mode = 'replace') {
             if (!exists) await db.savingsDeposits.add(sd);
           } catch (e) {
             console.warn(`Failed to merge savings deposit ${sd.id}:`, e);
+          }
+        }
+      }
+      if (data.assets?.length) {
+        for (const a of data.assets) {
+          try {
+            const exists = await db.assets.get(a.id);
+            if (!exists) await db.assets.add(a);
+          } catch (e) {
+            console.warn(`Failed to merge asset ${a.id}:`, e);
           }
         }
       }

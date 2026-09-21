@@ -370,6 +370,27 @@ html.light .bottom-nav {
   margin-right: auto;
 }
 
+/* Sticky app bar (Settings lives here now, not in the bottom nav) */
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+  color: var(--text-primary);
+}
+
+html.light .top-nav {
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+/* Space reserved under the sticky top nav */
+.app-main {
+  min-height: 100vh;
+}
+
 .page-header {
   display: flex;
   align-items: center;
