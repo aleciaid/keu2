@@ -1,16 +1,15 @@
 import { useEffect, useRef } from 'react';
-import { Settings } from 'lucide-react';
 
 /**
- * Fixed app bar shown on every tab. Holds the app identity and a shortcut to
- * Settings, which no longer has its own bottom-nav tab (Assets took that slot).
+ * Fixed app bar shown on every tab. Holds the app identity only — Settings has
+ * moved to a floating icon above the add button.
  *
  * The bar is `position: fixed` instead of `sticky`, because a sticky element
  * combined with `backdrop-filter` does not stay pinned on Android/iOS WebViews.
  * Its real height is measured and published as --top-nav-h so the page content
  * always reserves exactly the right amount of space (no overlap, no gap).
  */
-export default function TopNav({ active, onNavigate, title = 'FinTrack' }) {
+export default function TopNav({ onNavigate, title = 'FinTrack' }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -41,7 +40,7 @@ export default function TopNav({ active, onNavigate, title = 'FinTrack' }) {
 
   return (
     <header ref={ref} className="top-nav">
-      <div className="max-w-lg mx-auto flex items-center justify-between px-4 py-3">
+      <div className="max-w-lg mx-auto flex items-center px-4 py-3">
         <button
           onClick={() => onNavigate('dashboard')}
           className="flex items-center gap-2 min-w-0"
@@ -50,19 +49,6 @@ export default function TopNav({ active, onNavigate, title = 'FinTrack' }) {
             💰
           </span>
           <span className="text-sm font-bold text-white truncate">{title}</span>
-        </button>
-
-        <button
-          onClick={() => onNavigate('settings')}
-          aria-label="Pengaturan"
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
-            active === 'settings'
-              ? 'bg-primary-500/15 text-primary-400'
-              : 'text-surface-400 hover:text-primary-400 hover:bg-primary-500/10'
-          }`}
-        >
-          <Settings size={16} />
-          Pengaturan
         </button>
       </div>
     </header>

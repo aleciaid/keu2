@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
-import { Plus, User, Sparkles, Zap } from 'lucide-react';
+import { Plus, User, Sparkles, Zap, Settings as SettingsIcon } from 'lucide-react';
 import { db, seedDatabase, resetDatabase } from './db/database';
 import { ThemeProvider } from './context/ThemeContext';
 import { runBudgetScheduler } from './utils/budgetScheduler';
@@ -255,7 +255,7 @@ export default function App() {
         }}
       />
 
-      <TopNav active={page} onNavigate={handleNavigate} />
+      <TopNav onNavigate={handleNavigate} />
 
       <main className="app-main">
         {page === 'dashboard' && <Dashboard onNavigate={handleNavigate} userProfile={userProfile} />}
@@ -267,32 +267,42 @@ export default function App() {
         {page === 'settings' && <Settings />}
       </main>
 
-      {/* FAB - Add Transaction / Wallet / Budget / Savings / Asset */}
-      {(page === 'dashboard' || page === 'transactions' || page === 'wallets' || page === 'budget' || page === 'savings' || page === 'assets') && (
-        <button
-          onClick={() => {
-            if (page === 'wallets') {
-              setOpenWalletModal(true);
-            } else if (page === 'budget') {
-              setOpenBudgetModal(true);
-            } else if (page === 'savings') {
-              setOpenSavingsModal(true);
-            } else if (page === 'assets') {
-              setOpenAssetModal(true);
-            } else if (page !== 'transactions') {
-              setPage('transactions');
-              setTimeout(() => {
+      {/* Floating quick actions, stacked above the bottom nav */}
+      {page !== 'settings' && (
+        <div className="quick-actions">
+          <button
+            onClick={() => handleNavigate('settings')}
+            className="quick-action-btn quick-action-btn--settings"
+            aria-label="Pengaturan"
+          >
+            <SettingsIcon size={22} />
+          </button>
+
+          <button
+            onClick={() => {
+              if (page === 'wallets') {
+                setOpenWalletModal(true);
+              } else if (page === 'budget') {
+                setOpenBudgetModal(true);
+              } else if (page === 'savings') {
+                setOpenSavingsModal(true);
+              } else if (page === 'assets') {
+                setOpenAssetModal(true);
+              } else if (page !== 'transactions') {
+                setPage('transactions');
+                setTimeout(() => {
+                  setOpenTransactionModal(true);
+                }, 100);
+              } else {
                 setOpenTransactionModal(true);
-              }, 100);
-            } else {
-              setOpenTransactionModal(true);
-            }
-          }}
-          className="fab"
-          aria-label="Add"
-        >
-          <Plus size={24} />
-        </button>
+              }
+            }}
+            className="fab"
+            aria-label="Tambah"
+          >
+            <Plus size={24} />
+          </button>
+        </div>
       )}
 
       <BottomNav active={page} onNavigate={handleNavigate} />
