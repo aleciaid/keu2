@@ -25,6 +25,22 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <title>FinTrack - Personal Finance Tracker</title>
+    <script>
+      // Apply the saved UI template + color mode before first paint so the app
+      // never flashes the wrong look on startup.
+      (function () {
+        try {
+          var root = document.documentElement;
+          var tpl = localStorage.getItem('template') || 'classic';
+          root.setAttribute('data-template', tpl);
+          var mode = localStorage.getItem('theme');
+          root.classList.remove('dark', 'light');
+          root.classList.add(mode === 'light' ? 'light' : 'dark');
+        } catch (e) {
+          document.documentElement.setAttribute('data-template', 'classic');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

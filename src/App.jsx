@@ -4,11 +4,13 @@ import toast from 'react-hot-toast';
 import { Plus, User, Sparkles, Zap, Settings as SettingsIcon } from 'lucide-react';
 import { db, seedDatabase, resetDatabase } from './db/database';
 import { ThemeProvider } from './context/ThemeContext';
+import { TemplateProvider, DEFAULT_TEMPLATE } from './context/TemplateContext';
 import { runBudgetScheduler } from './utils/budgetScheduler';
 import { runAssetScheduler } from './utils/assets';
 import { checkAndApplyUpdate, getCurrentVersion } from './utils/appUpdater';
 import BottomNav from './components/BottomNav';
 import TopNav from './components/TopNav';
+import TemplatePicker from './components/TemplatePicker';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
 import Wallets from './pages/Wallets';
@@ -29,6 +31,8 @@ export default function App() {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [setupName, setSetupName] = useState('');
   const [setupAnimating, setSetupAnimating] = useState(false);
+  const [setupStep, setSetupStep] = useState('template');
+  const [templateChoice, setTemplateChoice] = useState(DEFAULT_TEMPLATE);
   
   // ── Check for app update on first mount ──────────────────────────────────
   useEffect(() => {
@@ -161,6 +165,8 @@ export default function App() {
       createdAt: new Date().toISOString(),
     };
     await db.settings.put({ key: 'userProfile', value: profile });
+    // Persist the template chosen during onboarding
+    await db.settings.put({ key: 'template', value: templateChoice });
     setTimeout(() => {
       setUserProfile(profile);
       setSetupAnimating(false);
@@ -191,6 +197,23 @@ export default function App() {
 
   // Profile setup screen for first-time users
   if (!userProfile) {
+    // Step 1: pick a UI template, Step 2: enter a name
+    if (setupStep === 'template') {
+      return (
+        <TemplateProvider>
+          <TemplatePicker
+            onContinue={(id) => {
+              setTemplateChoice(id);
+              setSetupStep('name');
+            }}
+            heading="Pilih Tampilan"
+            subheading="Pilih gaya tampilan aplikasi. Anda bisa mengubahnya kapan saja di Pengaturan."
+            continueLabel="Lanjut"
+          />
+        </TemplateProvider>
+      );
+    }
+
     return (
       <ThemeProvider>
         <div className="min-h-screen flex items-center justify-center p-6">
@@ -239,23 +262,24 @@ export default function App() {
   }
 
   return (
-    <ThemeProvider>
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          duration: 2500,
-          style: {
-            background: '#1e293b',
-            color: '#f1f5f9',
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderRadius: '12px',
-            fontSize: '13px',
-            padding: '12px 16px',
-          },
-        }}
-      />
+    <TemplateProvider>
+      <ThemeProvider>
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            duration: 2500,
+            style: {
+              background: 'var(--bg-tertiary)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '12px',
+              fontSize: '13px',
+              padding: '12px 16px',
+            },
+          }}
+        />
 
-      <TopNav onNavigate={handleNavigate} />
+        <TopNav onNavigate={handleNavigate} />
 
       <main className="app-main">
         {page === 'dashboard' && <Dashboard onNavigate={handleNavigate} userProfile={userProfile} />}
@@ -306,6 +330,7 @@ export default function App() {
       )}
 
       <BottomNav active={page} onNavigate={handleNavigate} />
-    </ThemeProvider>
+      </ThemeProvider>
+    </TemplateProvider>
   );
 }

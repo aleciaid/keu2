@@ -5,6 +5,8 @@ import { exportData, importData, validateImportData } from '../utils/exportImpor
 import { testWebhook } from '../utils/webhook';
 import { formatDateTime } from '../utils/currency';
 import { useTheme } from '../context/ThemeContext';
+import { useTemplate, TEMPLATES } from '../context/TemplateContext';
+import { TemplatePreview } from '../components/TemplatePicker';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import toast from 'react-hot-toast';
@@ -34,6 +36,7 @@ const CATEGORY_COLORS = ['#ef4444', '#f97316', '#eab308', '#10b981', '#14b8a6', 
 
 export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme();
+  const { template, setTemplate } = useTemplate();
   const categories = useLiveQuery(() => db.categories.toArray()) || [];
   const logs = useLiveQuery(() => db.logs.orderBy('createdAt').reverse().limit(50).toArray()) || [];
   const webhookUrl = useLiveQuery(() => db.settings.get('webhookUrl'));
@@ -426,26 +429,67 @@ export default function SettingsPage() {
               {/* Theme */}
               {section.id === 'theme' && isActive && (
                 <div className="card animate-scaleIn mt-2">
-                  <h3 className="text-sm font-semibold text-white mb-4">Tema Tampilan</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-surface-800/50">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-surface-700/50 flex items-center justify-center">
-                          {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-white">Mode {theme === 'dark' ? 'Gelap' : 'Terang'}</p>
-                          <p className="text-[11px] text-surface-500">Ubah warna latar belakang</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={toggleTheme}
-                        className={`w-12 h-7 rounded-full transition-all relative ${theme === 'dark' ? 'bg-primary-500' : 'bg-surface-700'}`}
-                      >
-                        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all ${theme === 'dark' ? 'left-6' : 'left-1'}`} />
-                      </button>
-                    </div>
+                  <h3 className="text-sm font-semibold text-white mb-4">Template Tampilan</h3>
+
+                  <div className="space-y-3">
+                    {TEMPLATES.map((t) => {
+                      const isActiveTpl = template === t.id;
+                      return (
+                        <button
+                          key={t.id}
+                          onClick={() => setTemplate(t.id)}
+                          className={`w-full text-left p-3 rounded-xl border transition-all ${
+                            isActiveTpl
+                              ? 'border-primary-500/60 bg-primary-500/10'
+                              : 'border-transparent bg-surface-800/50 hover:bg-surface-800'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-20 shrink-0">
+                              <TemplatePreview preview={t.preview} className="w-full h-16" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-bold text-white">{t.name}</p>
+                                {isActiveTpl && (
+                                  <span className="flex items-center gap-1 text-[10px] font-semibold text-primary-400">
+                                    <CheckCircle size={10} /> Aktif
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-surface-500 mt-0.5">{t.tagline}</p>
+                              <p className="text-[10px] text-surface-600 mt-1 leading-relaxed">
+                                {t.description}
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
+
+                  {/* Color mode only applies to Classic; Retro has a fixed look */}
+                  {TEMPLATES.find((t) => t.id === template)?.supportsColorMode && (
+                    <div className="mt-4 pt-4 border-t border-surface-800/50">
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-surface-800/50">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-surface-700/50 flex items-center justify-center">
+                            {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-white">Mode {theme === 'dark' ? 'Gelap' : 'Terang'}</p>
+                            <p className="text-[11px] text-surface-500">Ubah warna latar belakang</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={toggleTheme}
+                          className={`w-12 h-7 rounded-full transition-all relative ${theme === 'dark' ? 'bg-primary-500' : 'bg-surface-700'}`}
+                        >
+                          <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all ${theme === 'dark' ? 'left-6' : 'left-1'}`} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

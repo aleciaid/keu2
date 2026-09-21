@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 @theme {
   --color-primary-50: #eef2ff;
@@ -27,6 +27,28 @@
 
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
+
+/* ============================================================================
+   TEMPLATES
+   ----------------------------------------------------------------------------
+   A template is a named set of values for the Tailwind theme variables
+   (--color-*). Tailwind emits those variables in :root inside `@layer theme`,
+   and every color utility reads them at runtime â€” including opacity utilities
+   such as `bg-surface-800/50`, which compile to
+   `color-mix(in oklab, var(--color-surface-800) 50%, transparent)`.
+
+   Overriding the variables therefore retints the whole app without touching a
+   single component. These overrides are intentionally unlayered: unlayered
+   styles beat layered ones, so a template reliably wins over `@layer theme`.
+
+   `classic` is the original look and is left exactly as-is (see the :root and
+   html.light blocks below); only `retro` overrides variables.
+
+   NOTE ON ORDER: the Retro rules are declared *after* the html.light block on
+   purpose. `html.light` and `html[data-template='retro']` have the same
+   specificity, so source order decides â€” Retro must come last so that
+   selecting Retro wins even when the stored color mode is `light`.
+   ============================================================================ */
 
 /* CSS Variables - Dark Mode (default) */
 :root {
@@ -59,6 +81,127 @@ html.light {
   --border-color: rgba(226, 232, 240, 0.8);
   --card-bg: #ffffff;
   --input-bg: #ffffff;
+}
+
+/* ---------------------------------------------------------------------------
+   TEMPLATE: Retro (warm paper) â€” cream background, orange accent, dark brown
+   text, chunky borders. Declared after html.light so it wins regardless of the
+   stored color mode.
+   --------------------------------------------------------------------------- */
+html[data-template='retro'] {
+  /* Accent â€” burnt orange */
+  --color-primary-50: #fff4ed;
+  --color-primary-100: #ffe6d5;
+  --color-primary-200: #ffc9a8;
+  --color-primary-300: #ffa470;
+  --color-primary-400: #ff7a3c;
+  --color-primary-500: #e8590c;
+  --color-primary-600: #c2410c;
+  --color-primary-700: #9a3412;
+  --color-primary-800: #7c2d12;
+  --color-primary-900: #61220e;
+  --color-primary-950: #3a1408;
+
+  /* Surfaces â€” cream paper ramp (low = light, high = darker tone) */
+  --color-surface-50: #fffdf7;
+  --color-surface-100: #fdf8ec;
+  --color-surface-200: #f7edd8;
+  --color-surface-300: #f0e2c6;
+  --color-surface-400: #e3cfab;
+  --color-surface-500: #b9a07c;
+  --color-surface-600: #8a7358;
+  --color-surface-700: #6b5740;
+  --color-surface-800: #4a3a2a;
+  --color-surface-900: #33261b;
+  --color-surface-950: #1f1710;
+
+  /* The app uses text-white for its primary text, so white becomes the
+     template's ink. Toggle knobs use bg-white and are restored below. */
+  --color-white: #2e2118;
+
+  /* Warm-tuned accents so status colors sit naturally on cream */
+  --color-emerald-400: #2f7d5f;
+  --color-emerald-500: #256b4e;
+  --color-emerald-600: #1d5a41;
+  --color-red-400: #c0392b;
+  --color-red-500: #a5301f;
+  --color-red-600: #8a2718;
+  --color-amber-400: #b7791f;
+  --color-amber-500: #9c6415;
+  --color-blue-400: #2c6e9b;
+  --color-blue-500: #245a80;
+
+  /* Chunky retro geometry */
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.625rem;
+  --radius-3xl: 0.75rem;
+
+  /* App shell colors */
+  --text-primary: #2e2118;
+  --text-secondary: #4a3a2a;
+  --text-tertiary: #6b5740;
+  --bg-primary: #f7edd8;
+  --bg-secondary: #fffdf7;
+  --bg-tertiary: #fdf8ec;
+  --border-color: rgba(74, 58, 42, 0.35);
+  --card-bg: #fffdf7;
+  --input-bg: #ffffff;
+}
+
+/* Toggle knobs must stay genuinely white in Retro */
+html[data-template='retro'] .bg-white {
+  background-color: #ffffff;
+}
+
+/* Retro: firmer panel edges, no glass blur */
+html[data-template='retro'] .card,
+html[data-template='retro'] .stat-card {
+  border: 2px solid rgba(74, 58, 42, 0.5);
+  backdrop-filter: none;
+}
+
+html[data-template='retro'] .top-nav,
+html[data-template='retro'] .bottom-nav {
+  background: #fdf8ec;
+  border-color: rgba(74, 58, 42, 0.45);
+  backdrop-filter: none;
+}
+
+html[data-template='retro'] .modal-content {
+  border: 2px solid rgba(74, 58, 42, 0.5);
+}
+
+html[data-template='retro'] .quick-action-btn {
+  backdrop-filter: none;
+  border: 2px solid rgba(74, 58, 42, 0.4);
+}
+
+html[data-template='retro'] .btn-primary {
+  border: 2px solid rgba(74, 58, 42, 0.8);
+}
+
+html[data-template='retro'] input,
+html[data-template='retro'] select,
+html[data-template='retro'] textarea {
+  border: 2px solid rgba(74, 58, 42, 0.3);
+}
+
+/* Retro ghost buttons: warm paper instead of the default dark slate */
+html[data-template='retro'] .btn-ghost {
+  background: rgba(74, 58, 42, 0.08);
+  border: 2px solid rgba(74, 58, 42, 0.35);
+  color: var(--text-secondary);
+}
+
+html[data-template='retro'] .btn-ghost:hover {
+  background: rgba(74, 58, 42, 0.16);
+  color: var(--text-primary);
+}
+
+html[data-template='retro'] ::-webkit-scrollbar-thumb {
+  background: rgba(74, 58, 42, 0.35);
 }
 
 * {
@@ -118,7 +261,7 @@ body {
   background: var(--card-bg);
   backdrop-filter: blur(24px);
   border: 1px solid var(--border-color);
-  border-radius: 1rem;
+  border-radius: var(--radius-2xl);
   padding: 1.25rem;
   transition: all 0.3s;
   color: var(--text-primary);
@@ -128,7 +271,7 @@ body {
   background: var(--card-bg);
   backdrop-filter: blur(24px);
   border: 1px solid var(--border-color);
-  border-radius: 1rem;
+  border-radius: var(--radius-2xl);
   padding: 1.25rem;
   transition: all 0.3s;
   position: relative;
@@ -142,7 +285,7 @@ body {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem 1.25rem;
-  border-radius: 0.75rem;
+  border-radius: var(--radius-xl);
   font-weight: 600;
   font-size: 0.875rem;
   transition: all 0.2s;
@@ -234,7 +377,7 @@ body {
   border: 1px solid var(--border-color);
 }
 
-html.light .btn-ghost {
+html.light:not([data-template='retro']) .btn-ghost {
   background: #f1f5f9;
   color: #475569;
 }
@@ -244,7 +387,7 @@ html.light .btn-ghost {
   color: white;
 }
 
-html.light .btn-ghost:hover {
+html.light:not([data-template='retro']) .btn-ghost:hover {
   background: #e2e8f0;
   color: #1e293b;
 }
@@ -299,7 +442,7 @@ html.light .btn-ghost:hover {
   background: rgba(99, 102, 241, 0.15);
 }
 
-html.light .quick-action-btn--settings:hover {
+html.light:not([data-template='retro']) .quick-action-btn--settings:hover {
   background: #eef2ff;
   color: var(--color-primary-600);
 }
@@ -341,7 +484,7 @@ html.light .quick-action-btn--settings:hover {
   color: var(--text-primary);
 }
 
-html.light .bottom-nav {
+html.light:not([data-template='retro']) .bottom-nav {
   background: rgba(255, 255, 255, 0.95);
   border-top: 1px solid rgba(226, 232, 240, 0.5);
 }
@@ -445,7 +588,7 @@ html.light .bottom-nav {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
-html.light .top-nav {
+html.light:not([data-template='retro']) .top-nav {
   background: rgba(255, 255, 255, 0.95);
   border-bottom: 1px solid rgba(226, 232, 240, 0.5);
 }
@@ -516,7 +659,7 @@ html.light .top-nav {
   border-radius: 9999px;
 }
 
-html.light ::-webkit-scrollbar-thumb {
+html.light:not([data-template='retro']) ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
 }
 
@@ -559,45 +702,49 @@ input[type="number"] {
   animation: scaleIn 0.2s ease-out;
 }
 
-/* Automatic Text Color Mapping for Light Mode */
-html.light .text-white {
+/* Automatic Text Color Mapping for Light Mode.
+   Scoped to exclude Retro: these are Classic-specific hardcoded patches, and
+   `html.light .x` outranks the `html[data-template='retro'] .x` template rules,
+   so without `:not(...)` they would bleed into the Retro look whenever the
+   stored color mode happens to be `light`. */
+html.light:not([data-template='retro']) .text-white {
   color: var(--text-primary);
 }
 
-html.light .text-surface-300 {
+html.light:not([data-template='retro']) .text-surface-300 {
   color: var(--text-tertiary);
 }
 
-html.light .text-surface-400 {
+html.light:not([data-template='retro']) .text-surface-400 {
   color: var(--text-tertiary);
 }
 
-html.light .text-surface-500 {
+html.light:not([data-template='retro']) .text-surface-500 {
   color: var(--text-tertiary);
 }
 
-html.light .bg-surface-800\/50 {
+html.light:not([data-template='retro']) .bg-surface-800\/50 {
   background: rgba(241, 245, 249, 0.5);
   border-color: rgba(226, 232, 240, 0.5);
 }
 
-html.light .bg-surface-800 {
+html.light:not([data-template='retro']) .bg-surface-800 {
   background: rgba(241, 245, 249, 0.8);
   border-color: rgba(226, 232, 240, 0.8);
 }
 
-html.light .hover\:bg-surface-800:hover {
+html.light:not([data-template='retro']) .hover\:bg-surface-800:hover {
   background: rgba(226, 232, 240, 0.8);
 }
 
-html.light .hover\:bg-surface-800\/50:hover {
+html.light:not([data-template='retro']) .hover\:bg-surface-800\/50:hover {
   background: rgba(226, 232, 240, 0.5);
 }
 
-html.light .bg-surface-700\/50 {
+html.light:not([data-template='retro']) .bg-surface-700\/50 {
   background: rgba(226, 232, 240, 0.5);
 }
 
-html.light .bg-surface-700 {
+html.light:not([data-template='retro']) .bg-surface-700 {
   background: rgba(226, 232, 240, 0.8);
 }
