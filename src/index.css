@@ -79,31 +79,37 @@ body {
   transition: background-color 0.3s, color 0.3s;
 }
 
-input, select, textarea {
-  background: var(--input-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 0.75rem;
-  padding: 0.75rem 1rem;
-  color: var(--text-primary);
-  font-size: 0.875rem;
-  outline: none;
-  transition: all 0.2s;
-  width: 100%;
-  box-sizing: border-box;
-}
+/* Base element styles live in the `base` layer so Tailwind utilities
+   (`pl-10`, `py-2`, ...) win the cascade. Unlayered element rules would beat
+   every `@layer utilities` class and silently ignore utility padding, which
+   made text run underneath icons in inputs. */
+@layer base {
+  input, select, textarea {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    outline: none;
+    transition: all 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+  }
 
-input::placeholder, textarea::placeholder {
-  color: var(--text-tertiary);
-}
+  input::placeholder, textarea::placeholder {
+    color: var(--text-tertiary);
+  }
 
-input:focus, select:focus, textarea:focus {
-  border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
-}
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+  }
 
-select option {
-  background: var(--input-bg);
-  color: var(--text-primary);
+  select option {
+    background: var(--input-bg);
+    color: var(--text-primary);
+  }
 }
 
 /* === Component Classes (plain CSS) === */
