@@ -13,6 +13,21 @@ const TemplateContext = createContext();
  */
 export const TEMPLATES = [
   {
+    id: 'wattvision',
+    name: 'WattVision',
+    tagline: 'Dashboard gelap neon',
+    description: 'Gaya dashboard energi: latar gelap, aksen cyan neon, angka monospace, aksen hijau "live" dan merah untuk alert.',
+    preview: {
+      bg: '#121212',
+      card: '#1e1e1e',
+      accent: '#00e5ff',
+      text: '#ffffff',
+      muted: '#98989d',
+      radius: 16,
+    },
+    supportsColorMode: false,
+  },
+  {
     id: 'classic',
     name: 'Classic',
     tagline: 'Bersih & modern',
@@ -44,7 +59,9 @@ export const TEMPLATES = [
   },
 ];
 
-export const DEFAULT_TEMPLATE = 'classic';
+export const DEFAULT_TEMPLATE = 'wattvision';
+
+const MIGRATION_KEY = 'templateMigrationWattVision';
 
 export function isValidTemplate(id) {
   return TEMPLATES.some((t) => t.id === id);
@@ -80,6 +97,19 @@ export function TemplateProvider({ children }) {
         } catch (error) {
           console.error('Failed to load template:', error);
         }
+      }
+
+      // One-time migration: WattVision is the new default look, so installs
+      // still sitting on `classic` are moved over once. Anyone who deliberately
+      // keeps Classic after this can re-pick it in Settings and it will stick.
+      try {
+        if (!localStorage.getItem(MIGRATION_KEY) && (!saved || saved === 'classic')) {
+          saved = DEFAULT_TEMPLATE;
+          await db.settings.put({ key: 'template', value: saved });
+        }
+        localStorage.setItem(MIGRATION_KEY, '1');
+      } catch {
+        // ignore unavailable storage
       }
 
       const resolved = applyTemplate(saved || DEFAULT_TEMPLATE);

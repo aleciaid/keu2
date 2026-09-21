@@ -26,6 +26,7 @@
   --color-surface-950: #020617;
 
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 /* ============================================================================
@@ -204,6 +205,178 @@ html[data-template='retro'] ::-webkit-scrollbar-thumb {
   background: rgba(74, 58, 42, 0.35);
 }
 
+/* ---------------------------------------------------------------------------
+   TEMPLATE: WattVision — dark energy-dashboard look.
+   Flat #121212 / #1E1E1E surfaces separated by 1px #2C2C2E hairlines, neon cyan
+   for data and action, lime for "live"/normal, #FF453A for alerts. Fixed
+   appearance (no light mode), so it is declared after html.light like Retro.
+   --------------------------------------------------------------------------- */
+html[data-template='wattvision'] {
+  /* Accent — neon cyan */
+  --color-primary-50: #e0fcff;
+  --color-primary-100: #b8f7ff;
+  --color-primary-200: #7deeff;
+  --color-primary-300: #3fe4ff;
+  --color-primary-400: #4dedff;
+  --color-primary-500: #00e5ff;
+  --color-primary-600: #00b8cc;
+  --color-primary-700: #008f9e;
+  --color-primary-800: #006670;
+  --color-primary-900: #004049;
+  --color-primary-950: #002229;
+
+  /* Surfaces — neutral graphite ramp (#121212 -> #1E1E1E -> #2C2C2E) */
+  --color-surface-50: #f5f5f7;
+  --color-surface-100: #e5e5ea;
+  --color-surface-200: #c7c7cc;
+  --color-surface-300: #aeaeb2;
+  --color-surface-400: #98989d;
+  --color-surface-500: #7c7c82;
+  --color-surface-600: #68686e;
+  --color-surface-700: #2c2c2e;
+  --color-surface-800: #252525;
+  --color-surface-900: #1e1e1e;
+  --color-surface-950: #121212;
+
+  /* Status accents — lime "live", alert red, warning amber, cool info */
+  --color-emerald-300: #7df294;
+  --color-emerald-400: #4ce870;
+  --color-emerald-500: #32d74b;
+  --color-emerald-600: #28a93c;
+  --color-emerald-700: #1f8330;
+  --color-red-300: #ff8a84;
+  --color-red-400: #ff453a;
+  --color-red-500: #e5382e;
+  --color-red-600: #c42b23;
+  --color-amber-300: #ffd166;
+  --color-amber-400: #ffb020;
+  --color-amber-500: #e09600;
+  --color-blue-300: #6fe9ff;
+  --color-blue-400: #2fd8f5;
+  --color-blue-500: #00c2e0;
+  --color-cyan-400: #22e0ff;
+  --color-teal-400: #2fd8b0;
+  --color-teal-500: #17b893;
+  --color-indigo-400: #7c9cff;
+  --color-indigo-500: #4c6fe8;
+  --color-purple-400: #a96bff;
+  --color-purple-500: #8b3dff;
+  --color-orange-400: #ff7a45;
+  --color-orange-500: #e85d2a;
+  --color-rose-400: #ff5a7a;
+  --color-yellow-400: #ffd166;
+
+  /* App shell colors */
+  --text-primary: #ffffff;
+  --text-secondary: #98989d;
+  --text-tertiary: #7c7c82;
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --bg-tertiary: #252525;
+  --border-color: #2c2c2e;
+  --card-bg: #1e1e1e;
+  --input-bg: #1e1e1e;
+}
+
+/* Cards: flat panel, 16px radius, hairline border (no glass blur) */
+html[data-template='wattvision'] .card,
+html[data-template='wattvision'] .stat-card {
+  border: 1px solid #2c2c2e;
+  background: #1e1e1e;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+html[data-template='wattvision'] .top-nav,
+html[data-template='wattvision'] .bottom-nav {
+  background: rgba(18, 18, 18, 0.92);
+  border-color: #2c2c2e;
+  backdrop-filter: blur(16px);
+}
+
+html[data-template='wattvision'] .modal-content {
+  border: 1px solid #2c2c2e;
+  background: #1e1e1e;
+}
+
+html[data-template='wattvision'] .modal-overlay {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+html[data-template='wattvision'] .quick-action-btn {
+  border: 1px solid #2c2c2e;
+  background: #1e1e1e;
+  backdrop-filter: none;
+}
+
+html[data-template='wattvision'] input,
+html[data-template='wattvision'] select,
+html[data-template='wattvision'] textarea {
+  border: 1px solid #2c2c2e;
+  background: #1e1e1e;
+  border-radius: 0.75rem;
+}
+
+html[data-template='wattvision'] input:focus,
+html[data-template='wattvision'] select:focus,
+html[data-template='wattvision'] textarea:focus {
+  border-color: #00e5ff;
+  box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.18);
+}
+
+html[data-template='wattvision'] .input-label {
+  color: #98989d;
+}
+
+html[data-template='wattvision'] .btn-ghost {
+  background: #252525;
+  border: 1px solid #2c2c2e;
+  color: #98989d;
+}
+
+html[data-template='wattvision'] .btn-ghost:hover {
+  background: #2c2c2e;
+  color: #ffffff;
+}
+
+html[data-template='wattvision'] .btn-primary,
+html[data-template='wattvision'] .fab {
+  box-shadow: 0 12px 28px -10px rgba(0, 229, 255, 0.45);
+}
+
+html[data-template='wattvision'] ::-webkit-scrollbar-thumb {
+  background: #3a3a3c;
+}
+
+/* Alerts: #3A1C1C panel, #FF453A text, 4px left rule */
+html[data-template='wattvision'] .bg-red-500\/10.border-red-500\/30,
+html[data-template='wattvision'] .bg-amber-500\/10.border-amber-500\/30,
+html[data-template='wattvision'] .bg-orange-500\/10.border-orange-500\/30 {
+  border: 1px solid rgba(255, 69, 58, 0.28);
+  border-left: 4px solid #ff453a;
+  background: #3a1c1c;
+}
+
+/* KPI figures use the monospaced face; the headline metric scales up to the
+   design's 32px on wider screens while staying readable in the 2-column
+   mobile grid (compact `text-sm` figures in 3-up cards keep their size). */
+html[data-template='wattvision'] .stat-card p.font-bold,
+html[data-template='wattvision'] .text-2xl.font-bold,
+html[data-template='wattvision'] .text-3xl.font-bold {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+html[data-template='wattvision'] .stat-card p.text-base.font-bold {
+  font-size: clamp(1.125rem, 4.8vw, 2rem);
+}
+
+html[data-template='wattvision'] .text-2xl.font-bold {
+  font-size: clamp(1.5rem, 6vw, 2rem);
+}
+
 * {
   -webkit-tap-highlight-color: transparent;
 }
@@ -377,7 +550,7 @@ body {
   border: 1px solid var(--border-color);
 }
 
-html.light:not([data-template='retro']) .btn-ghost {
+html.light:not([data-template='retro']):not([data-template='wattvision']) .btn-ghost {
   background: #f1f5f9;
   color: #475569;
 }
@@ -387,7 +560,7 @@ html.light:not([data-template='retro']) .btn-ghost {
   color: white;
 }
 
-html.light:not([data-template='retro']) .btn-ghost:hover {
+html.light:not([data-template='retro']):not([data-template='wattvision']) .btn-ghost:hover {
   background: #e2e8f0;
   color: #1e293b;
 }
@@ -442,7 +615,7 @@ html.light:not([data-template='retro']) .btn-ghost:hover {
   background: rgba(99, 102, 241, 0.15);
 }
 
-html.light:not([data-template='retro']) .quick-action-btn--settings:hover {
+html.light:not([data-template='retro']):not([data-template='wattvision']) .quick-action-btn--settings:hover {
   background: #eef2ff;
   color: var(--color-primary-600);
 }
@@ -484,7 +657,7 @@ html.light:not([data-template='retro']) .quick-action-btn--settings:hover {
   color: var(--text-primary);
 }
 
-html.light:not([data-template='retro']) .bottom-nav {
+html.light:not([data-template='retro']):not([data-template='wattvision']) .bottom-nav {
   background: rgba(255, 255, 255, 0.95);
   border-top: 1px solid rgba(226, 232, 240, 0.5);
 }
@@ -588,7 +761,7 @@ html.light:not([data-template='retro']) .bottom-nav {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
-html.light:not([data-template='retro']) .top-nav {
+html.light:not([data-template='retro']):not([data-template='wattvision']) .top-nav {
   background: rgba(255, 255, 255, 0.95);
   border-bottom: 1px solid rgba(226, 232, 240, 0.5);
 }
@@ -659,7 +832,7 @@ html.light:not([data-template='retro']) .top-nav {
   border-radius: 9999px;
 }
 
-html.light:not([data-template='retro']) ::-webkit-scrollbar-thumb {
+html.light:not([data-template='retro']):not([data-template='wattvision']) ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
 }
 
@@ -702,49 +875,143 @@ input[type="number"] {
   animation: scaleIn 0.2s ease-out;
 }
 
-/* Automatic Text Color Mapping for Light Mode.
-   Scoped to exclude Retro: these are Classic-specific hardcoded patches, and
-   `html.light .x` outranks the `html[data-template='retro'] .x` template rules,
-   so without `:not(...)` they would bleed into the Retro look whenever the
-   stored color mode happens to be `light`. */
-html.light:not([data-template='retro']) .text-white {
+/* Automatic Text Color Mapping.
+   Components hardcode `text-white` for primary text and the surface ramp for
+   muted labels. On Classic that reads correctly (dark surfaces in dark mode,
+   inverted patches in light mode). The two fixed templates — Retro's cream
+   paper and WattVision's graphite — remap those utilities to their own ink so
+   nothing renders light-on-light or dark-on-dark.
+
+   These rules are unlayered, so they beat the `@layer utilities` classes they
+   patch. Source order matters between templates because the selectors have
+   equal specificity, so WattVision (declared last) wins over Retro. */
+
+/* --- Classic --- */
+html.light:not([data-template='retro']):not([data-template='wattvision']) .text-white {
   color: var(--text-primary);
 }
 
-html.light:not([data-template='retro']) .text-surface-300 {
+html.light:not([data-template='retro']):not([data-template='wattvision']) .text-surface-300,
+html.light:not([data-template='retro']):not([data-template='wattvision']) .text-surface-400,
+html.light:not([data-template='retro']):not([data-template='wattvision']) .text-surface-500 {
   color: var(--text-tertiary);
 }
 
-html.light:not([data-template='retro']) .text-surface-400 {
-  color: var(--text-tertiary);
-}
-
-html.light:not([data-template='retro']) .text-surface-500 {
-  color: var(--text-tertiary);
-}
-
-html.light:not([data-template='retro']) .bg-surface-800\/50 {
+html.light:not([data-template='retro']):not([data-template='wattvision']) .bg-surface-800\/50 {
   background: rgba(241, 245, 249, 0.5);
   border-color: rgba(226, 232, 240, 0.5);
 }
 
-html.light:not([data-template='retro']) .bg-surface-800 {
+html.light:not([data-template='retro']):not([data-template='wattvision']) .bg-surface-800 {
   background: rgba(241, 245, 249, 0.8);
   border-color: rgba(226, 232, 240, 0.8);
 }
 
-html.light:not([data-template='retro']) .hover\:bg-surface-800:hover {
+html.light:not([data-template='retro']):not([data-template='wattvision']) .hover\:bg-surface-800:hover {
   background: rgba(226, 232, 240, 0.8);
 }
 
-html.light:not([data-template='retro']) .hover\:bg-surface-800\/50:hover {
+html.light:not([data-template='retro']):not([data-template='wattvision']) .hover\:bg-surface-800\/50:hover {
   background: rgba(226, 232, 240, 0.5);
 }
 
-html.light:not([data-template='retro']) .bg-surface-700\/50 {
+html.light:not([data-template='retro']):not([data-template='wattvision']) .bg-surface-700\/50 {
   background: rgba(226, 232, 240, 0.5);
 }
 
-html.light:not([data-template='retro']) .bg-surface-700 {
+html.light:not([data-template='retro']):not([data-template='wattvision']) .bg-surface-700 {
   background: rgba(226, 232, 240, 0.8);
+}
+
+/* --- Retro: black ink on cream paper.
+   The Retro ramp is inverted (low = light, high = dark) because components use
+   the mid steps as fills, but they also use them as *text* tints. There, cream
+   `#e3cfab` on a cream card is invisible — which is what muted labels, the
+   bottom-nav icons and empty states were doing. Muted text is therefore forced
+   to black ink, and the dark fills (`surface-700/800`) are turned into paper
+   tones so that same ink still reads on chips, tracks and the modal close
+   button. */
+html[data-template='retro'] .text-white,
+html[data-template='retro'] .text-surface-300,
+html[data-template='retro'] .text-surface-400,
+html[data-template='retro'] .text-surface-500 {
+  color: #000000;
+}
+
+html[data-template='retro'] .text-surface-600 {
+  color: #2e2118;
+}
+
+html[data-template='retro'] .text-surface-700 {
+  color: #4a3a2a;
+}
+
+html[data-template='retro'] .bg-surface-800\/50,
+html[data-template='retro'] .hover\:bg-surface-800\/50:hover {
+  background: rgba(74, 58, 42, 0.1);
+}
+
+html[data-template='retro'] .bg-surface-800,
+html[data-template='retro'] .hover\:bg-surface-800:hover {
+  background: rgba(74, 58, 42, 0.16);
+}
+
+html[data-template='retro'] .bg-surface-700\/50,
+html[data-template='retro'] .hover\:bg-surface-700\/50:hover {
+  background: rgba(74, 58, 42, 0.2);
+}
+
+html[data-template='retro'] .bg-surface-700,
+html[data-template='retro'] .hover\:bg-surface-700:hover {
+  background: rgba(74, 58, 42, 0.3);
+}
+
+/* --- WattVision: same remapping, expressed with its own shell variables --- */
+html[data-template='wattvision'] .text-white {
+  color: var(--text-primary);
+}
+
+html[data-template='wattvision'] .text-surface-300 {
+  color: #c7c7cc;
+}
+
+html[data-template='wattvision'] .text-surface-400 {
+  color: var(--text-secondary);
+}
+
+html[data-template='wattvision'] .text-surface-500,
+html[data-template='wattvision'] .text-surface-600,
+html[data-template='wattvision'] .text-surface-700 {
+  color: var(--text-tertiary);
+}
+
+html[data-template='wattvision'] .bg-surface-800\/50 {
+  background: rgba(37, 37, 37, 0.5);
+}
+
+html[data-template='wattvision'] .bg-surface-800\/40 {
+  background: rgba(37, 37, 37, 0.4);
+}
+
+html[data-template='wattvision'] .bg-surface-800\/30 {
+  background: rgba(37, 37, 37, 0.3);
+}
+
+html[data-template='wattvision'] .bg-surface-800 {
+  background: #252525;
+}
+
+html[data-template='wattvision'] .bg-surface-700\/50,
+html[data-template='wattvision'] .bg-surface-700\/40,
+html[data-template='wattvision'] .bg-surface-700 {
+  background: #2c2c2e;
+}
+
+html[data-template='wattvision'] .hover\:bg-surface-800:hover {
+  background: #2c2c2e;
+}
+
+html[data-template='wattvision'] .hover\:bg-surface-700\/50:hover,
+html[data-template='wattvision'] .hover\:bg-surface-700:hover {
+  background: #3a3a3c;
 }

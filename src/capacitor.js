@@ -19,7 +19,7 @@ export async function initCapacitor() {
   // ─── Status Bar ───────────────────────────────────────────────
   try {
     await StatusBar.setStyle({ style: Style.Dark });
-    await StatusBar.setBackgroundColor({ color: '#020617' });
+    await StatusBar.setBackgroundColor({ color: '#121212' });
   } catch (e) {
     console.warn('StatusBar plugin error:', e);
   }

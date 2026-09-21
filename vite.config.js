@@ -19,8 +19,8 @@ export default defineConfig({
         description: "Offline-first personal finance tracking app with multi-wallet support",
         start_url: "/",
         display: "standalone",
-        background_color: "#020617",
-        theme_color: "#020617",
+        background_color: "#121212",
+        theme_color: "#121212",
         orientation: "portrait",
         categories: ["finance", "utilities"],
         icons: [

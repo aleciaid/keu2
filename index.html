@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/icon-192.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#020617" />
+    <meta name="theme-color" content="#121212" />
     <meta name="color-scheme" content="dark light" />
     <meta name="description" content="Personal Finance Tracker - Offline-first PWA untuk tracking keuangan pribadi dengan multi-wallet support" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -23,7 +23,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
     <title>FinTrack - Personal Finance Tracker</title>
     <script>
       // Apply the saved UI template + color mode before first paint so the app
@@ -31,7 +31,7 @@
       (function () {
         try {
           var root = document.documentElement;
-          var tpl = localStorage.getItem('template') || 'classic';
+          var tpl = localStorage.getItem('template') || 'wattvision';
           root.setAttribute('data-template', tpl);
           var mode = localStorage.getItem('theme');
           root.classList.remove('dark', 'light');
