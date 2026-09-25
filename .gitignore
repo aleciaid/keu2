@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Env
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -31,3 +36,6 @@ android/.idea/
 android/local.properties
 *.apk
 *.aab
+
+# Local Netlify folder
+.netlify

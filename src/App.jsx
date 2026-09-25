@@ -7,6 +7,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { TemplateProvider, DEFAULT_TEMPLATE } from './context/TemplateContext';
 import { runBudgetScheduler } from './utils/budgetScheduler';
 import { runAssetScheduler } from './utils/assets';
+import { runAutoPush as runAccountAutoPush } from './utils/accountSync';
 import { checkAndApplyUpdate, getCurrentVersion } from './utils/appUpdater';
 import BottomNav from './components/BottomNav';
 import TopNav from './components/TopNav';
@@ -138,10 +139,14 @@ export default function App() {
       }
     });
 
+    // Non-blocking: keluar segera kecuali akun aktif dan auto-push menyala.
+    runAccountAutoPush();
+
     // Check periodically (every 60s)
     const interval = setInterval(() => {
       runBudgetScheduler();
       runAssetScheduler();
+      runAccountAutoPush();
     }, 60_000);
 
     return () => clearInterval(interval);

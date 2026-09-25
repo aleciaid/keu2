@@ -29,7 +29,21 @@ import {
   Sun,
   User,
   Copy,
+  Cloud,
+  LogOut,
 } from 'lucide-react';
+import {
+  register as registerAccount,
+  login as loginAccount,
+  logout as logoutAccount,
+  getStatus as getAccountStatus,
+  getLocalRecordCounts as getAccountLocalCounts,
+  fetchServerStatus,
+  pushSnapshot,
+  pullSnapshot,
+  deleteServerData,
+  setAutoPush as setAccountAutoPush,
+} from '../utils/accountSync';
 
 const CATEGORY_ICONS = ['💰', '🎁', '📈', '📥', '🍕', '🚗', '📄', '🛍️', '🎬', '🏥', '📚', '📦', '🏠', '💡', '📱', '🎮', '🍔', '☕', '🚌', '✈️', '🎵', '💊', '🐕', '👶', '🏋️'];
 const CATEGORY_COLORS = ['#ef4444', '#f97316', '#eab308', '#10b981', '#14b8a6', '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#64748b'];
@@ -81,6 +95,118 @@ export default function SettingsPage() {
       setWhEnabled(webhookEnabled.value || false);
     }
   }, [webhookUrl, webhookEnabled]);
+
+  // --- Akun & sinkronisasi ---
+  const accountStatus = useLiveQuery(getAccountStatus);
+  const localCounts = useLiveQuery(getAccountLocalCounts);
+  const [accountBusy, setAccountBusy] = useState(false);
+  const [accountMode, setAccountMode] = useState('login');
+  const [accEmail, setAccEmail] = useState('');
+  const [accPassword, setAccPassword] = useState('');
+  const [accName, setAccName] = useState('');
+  const [serverStatus, setServerStatus] = useState(null);
+  const [pullConfirmOpen, setPullConfirmOpen] = useState(false);
+  const [deleteServerConfirmOpen, setDeleteServerConfirmOpen] = useState(false);
+
+  // Metadata server diambil ulang saat panel dibuka dan setelah push/pull.
+  useEffect(() => {
+    if (activeSection !== 'account' || !accountStatus?.loggedIn) {
+      setServerStatus(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+    fetchServerStatus()
+      .then((status) => {
+        if (!cancelled) setServerStatus(status);
+      })
+      .catch(() => {
+        if (!cancelled) setServerStatus(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSection, accountStatus?.loggedIn, accountStatus?.serverUpdatedAt]);
+
+  const handleAccountSubmit = async () => {
+    if (!accEmail.trim() || !accPassword) {
+      toast.error('Email dan password wajib diisi');
+      return;
+    }
+
+    setAccountBusy(true);
+    try {
+      if (accountMode === 'register') {
+        await registerAccount({ email: accEmail, password: accPassword, displayName: accName });
+        toast.success('Akun dibuat dan Anda sudah masuk');
+      } else {
+        await loginAccount({ email: accEmail, password: accPassword });
+        toast.success('Berhasil masuk');
+      }
+      setAccPassword('');
+      setAccName('');
+    } catch (e) {
+      toast.error(e.message || 'Gagal memproses akun');
+    } finally {
+      setAccountBusy(false);
+    }
+  };
+
+  const handleAccountPush = async () => {
+    setAccountBusy(true);
+    try {
+      const result = await pushSnapshot();
+      toast.success(`Terunggah · ${result.recordCount} baris`);
+      setServerStatus(await fetchServerStatus().catch(() => null));
+    } catch (e) {
+      toast.error(e.message || 'Gagal mengunggah data');
+    } finally {
+      setAccountBusy(false);
+    }
+  };
+
+  const handleAccountPull = async () => {
+    setPullConfirmOpen(false);
+    setAccountBusy(true);
+    try {
+      const result = await pullSnapshot();
+      toast.success(`Data dipulihkan · ${result.recordCount} baris`);
+      setServerStatus(await fetchServerStatus().catch(() => null));
+    } catch (e) {
+      toast.error(e.message || 'Gagal memulihkan data');
+    } finally {
+      setAccountBusy(false);
+    }
+  };
+
+  const handleAccountLogout = async () => {
+    setAccountBusy(true);
+    try {
+      await logoutAccount();
+      toast.success('Berhasil keluar dari akun');
+    } finally {
+      setAccountBusy(false);
+    }
+  };
+
+  const handleDeleteServerData = async () => {
+    setDeleteServerConfirmOpen(false);
+    setAccountBusy(true);
+    try {
+      await deleteServerData();
+      setServerStatus(null);
+      toast.success('Data di server dihapus');
+    } catch (e) {
+      toast.error(e.message || 'Gagal menghapus data server');
+    } finally {
+      setAccountBusy(false);
+    }
+  };
+
+  const handleToggleAutoPush = async () => {
+    await setAccountAutoPush(!accountStatus?.autoPush);
+  };
 
   // Category modal
   const [catModalOpen, setCatModalOpen] = useState(false);
@@ -228,6 +354,7 @@ export default function SettingsPage() {
 
   const sections = [
     { id: 'profile', label: 'Profil', icon: User, desc: 'Informasi akun Anda' },
+    { id: 'account', label: 'Akun', icon: Cloud, desc: 'Sinkronisasi data ke server' },
     { id: 'categories', label: 'Kategori', icon: Tags, desc: 'Kelola kategori transaksi' },
     { id: 'theme', label: 'Tema', icon: Moon, desc: 'Pengaturan tampilan' },
     { id: 'webhook', label: 'Webhook', icon: Webhook, desc: 'Integrasi webhook' },
@@ -491,6 +618,258 @@ export default function SettingsPage() {
                     </div>
                   )}
                 </div>
+              )}
+
+              {/* Akun & sinkronisasi */}
+              {section.id === 'account' && isActive && (
+                <>
+                  <div className="card animate-scaleIn mt-2">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-semibold text-white">Akun & Sinkronisasi</h3>
+                      {accountStatus?.loggedIn ? (
+                        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400">
+                          <CheckCircle size={10} /> Masuk
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-surface-500">Opsional</span>
+                      )}
+                    </div>
+
+                    {!accountStatus ? (
+                      <p className="text-xs text-surface-500">Memuat…</p>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="p-3 rounded-xl bg-surface-800/50 border border-surface-700/40">
+                          <p className="text-[11px] text-surface-400 leading-relaxed">
+                            Fitur opsional. Tanpa akun, seluruh data tetap tersimpan di perangkat ini.
+                            Dengan akun, data keuangan Anda ikut tersimpan di server sehingga bisa
+                            dipulihkan di perangkat lain.
+                          </p>
+                        </div>
+
+                        {!accountStatus.loggedIn ? (
+                          <>
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => setAccountMode('login')}
+                                className={`flex-1 py-2 rounded-xl text-xs font-medium border transition-all ${
+                                  accountMode === 'login'
+                                    ? 'bg-primary-500/15 border-primary-500/30 text-primary-400'
+                                    : 'bg-surface-800/50 border-transparent text-surface-400'
+                                }`}
+                              >
+                                Masuk
+                              </button>
+                              <button
+                                onClick={() => setAccountMode('register')}
+                                className={`flex-1 py-2 rounded-xl text-xs font-medium border transition-all ${
+                                  accountMode === 'register'
+                                    ? 'bg-primary-500/15 border-primary-500/30 text-primary-400'
+                                    : 'bg-surface-800/50 border-transparent text-surface-400'
+                                }`}
+                              >
+                                Daftar
+                              </button>
+                            </div>
+
+                            <div className="input-group">
+                              <label className="input-label">Email</label>
+                              <input
+                                type="email"
+                                value={accEmail}
+                                onChange={(e) => setAccEmail(e.target.value)}
+                                placeholder="nama@email.com"
+                                autoComplete="email"
+                                className="w-full text-xs"
+                              />
+                            </div>
+
+                            <div className="input-group">
+                              <label className="input-label">Password</label>
+                              <input
+                                type="password"
+                                value={accPassword}
+                                onChange={(e) => setAccPassword(e.target.value)}
+                                placeholder="Minimal 8 karakter"
+                                autoComplete={accountMode === 'register' ? 'new-password' : 'current-password'}
+                                className="w-full text-xs"
+                              />
+                            </div>
+
+                            {accountMode === 'register' && (
+                              <div className="input-group">
+                                <label className="input-label">Nama (opsional)</label>
+                                <input
+                                  type="text"
+                                  value={accName}
+                                  onChange={(e) => setAccName(e.target.value)}
+                                  placeholder="Nama tampilan"
+                                  className="w-full text-xs"
+                                />
+                              </div>
+                            )}
+
+                            <button
+                              onClick={handleAccountSubmit}
+                              disabled={accountBusy}
+                              className="btn-primary w-full"
+                            >
+                              {accountBusy ? (
+                                <Loader2 size={14} className="animate-spin" />
+                              ) : (
+                                <Cloud size={14} />
+                              )}
+                              {accountMode === 'register' ? 'Daftar & Masuk' : 'Masuk'}
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="p-2.5 rounded-xl bg-surface-800/50 col-span-2">
+                                <p className="text-[10px] text-surface-500 mb-0.5">Akun</p>
+                                <p className="text-xs font-medium text-white truncate">
+                                  {accountStatus.user?.email}
+                                </p>
+                                {accountStatus.user?.displayName && (
+                                  <p className="text-[10px] text-surface-500 mt-0.5">
+                                    {accountStatus.user.displayName}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="p-2.5 rounded-xl bg-surface-800/50">
+                                <p className="text-[10px] text-surface-500 mb-0.5">Data lokal</p>
+                                <p className="text-sm font-bold text-white">{localCounts?.total ?? 0}</p>
+                              </div>
+                              <div className="p-2.5 rounded-xl bg-surface-800/50">
+                                <p className="text-[10px] text-surface-500 mb-0.5">Data di server</p>
+                                <p className="text-sm font-bold text-white">
+                                  {serverStatus?.hasData ? serverStatus.recordCount : '—'}
+                                </p>
+                              </div>
+                              <div className="p-2.5 rounded-xl bg-surface-800/50 col-span-2">
+                                <p className="text-[10px] text-surface-500 mb-0.5">Pembaruan server</p>
+                                <p className="text-[11px] font-medium text-white">
+                                  {serverStatus?.updatedAt
+                                    ? formatDateTime(serverStatus.updatedAt)
+                                    : 'Belum ada data di server'}
+                                </p>
+                              </div>
+                            </div>
+
+                            {serverStatus?.hasData && !accountStatus.lastPullAt && (
+                              <div className="flex items-start gap-2 p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/25">
+                                <Info size={13} className="text-blue-400 mt-0.5 shrink-0" />
+                                <p className="text-[10px] text-blue-200/90 leading-relaxed">
+                                  Server sudah punya data untuk akun ini. Pilih “Unggah” untuk menimpa
+                                  dengan data perangkat ini, atau “Pulihkan” untuk mengambil data server.
+                                </p>
+                              </div>
+                            )}
+
+                            <div className="flex gap-2">
+                              <button
+                                onClick={handleAccountPush}
+                                disabled={accountBusy}
+                                className="btn-primary btn-sm flex-1"
+                              >
+                                {accountBusy ? (
+                                  <Loader2 size={14} className="animate-spin" />
+                                ) : (
+                                  <Upload size={14} />
+                                )}
+                                Unggah
+                              </button>
+                              <button
+                                onClick={() => setPullConfirmOpen(true)}
+                                disabled={accountBusy || !serverStatus?.hasData}
+                                className="btn-ghost btn-sm flex-1"
+                              >
+                                <Download size={14} /> Pulihkan
+                              </button>
+                            </div>
+
+                            <div className="flex items-center justify-between p-3 rounded-xl bg-surface-800/50">
+                              <div>
+                                <p className="text-sm font-medium text-white">Unggah otomatis</p>
+                                <p className="text-[11px] text-surface-500">Simpan ke server tiap 15 menit</p>
+                              </div>
+                              <button
+                                onClick={handleToggleAutoPush}
+                                className={`w-12 h-7 rounded-full transition-all relative ${
+                                  accountStatus.autoPush ? 'bg-primary-500' : 'bg-surface-700'
+                                }`}
+                              >
+                                <span
+                                  className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all ${
+                                    accountStatus.autoPush ? 'left-6' : 'left-1'
+                                  }`}
+                                />
+                              </button>
+                            </div>
+
+                            <p className="text-[10px] text-surface-600">
+                              Terakhir diunggah:{' '}
+                              {accountStatus.lastPushAt
+                                ? formatDateTime(accountStatus.lastPushAt)
+                                : 'belum pernah'}
+                            </p>
+
+                            <div className="flex gap-2">
+                              <button
+                                onClick={handleAccountLogout}
+                                disabled={accountBusy}
+                                className="btn-ghost btn-sm flex-1"
+                              >
+                                <LogOut size={14} /> Keluar
+                              </button>
+                              <button
+                                onClick={() => setDeleteServerConfirmOpen(true)}
+                                disabled={accountBusy || !serverStatus?.hasData}
+                                className="btn-ghost btn-sm flex-1"
+                              >
+                                <Trash2 size={14} /> Hapus data server
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <Modal
+                    isOpen={pullConfirmOpen}
+                    onClose={() => setPullConfirmOpen(false)}
+                    title="Pulihkan dari Server?"
+                  >
+                    <p className="text-sm text-surface-400">
+                      Seluruh data keuangan di perangkat ini akan diganti dengan data dari server
+                      {typeof serverStatus?.recordCount === 'number'
+                        ? ` (${serverStatus.recordCount} baris)`
+                        : ''}
+                      . Tindakan ini tidak bisa dibatalkan.
+                    </p>
+                    <div className="flex gap-3 mt-6">
+                      <button onClick={() => setPullConfirmOpen(false)} className="btn-ghost flex-1">
+                        Batal
+                      </button>
+                      <button
+                        onClick={handleAccountPull}
+                        disabled={accountBusy}
+                        className="btn-primary flex-1"
+                      >
+                        Pulihkan
+                      </button>
+                    </div>
+                  </Modal>
+
+                  <ConfirmDialog
+                    isOpen={deleteServerConfirmOpen}
+                    onClose={() => setDeleteServerConfirmOpen(false)}
+                    onConfirm={handleDeleteServerData}
+                    title="Hapus Data di Server?"
+                    message="Salinan data akun ini akan dihapus dari server. Data di perangkat ini tidak terpengaruh."
+                  />
+                </>
               )}
 
               {/* Webhook */}

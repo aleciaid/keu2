@@ -12,6 +12,19 @@
   command = "npm run build"
   publish = "dist"
 
+[functions]
+  node_bundler = "esbuild"
+  # mysql2 memakai require dinamis, jadi dibiarkan eksternal dan disertakan
+  # dari node_modules alih-alih ikut di-bundle.
+  external_node_modules = ["mysql2"]
+
+# Fungsi API harus dicocokkan sebelum catch-all SPA di bawah, kalau tidak
+# permintaan /api/* akan dilayani index.html.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
