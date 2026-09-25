@@ -784,7 +784,7 @@ export default function SettingsPage() {
                                 disabled={accountBusy || !serverStatus?.hasData}
                                 className="btn-ghost btn-sm flex-1"
                               >
-                                <Download size={14} /> Pulihkan
+                                <Download size={14} /> Singkronkan
                               </button>
                             </div>
 
